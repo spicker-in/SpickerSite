@@ -206,7 +206,7 @@
                     errorBox.textContent = "Fehler: " + error.message;
                     errorBox.style.display = 'block';
                 }
-            } else {
+            } else { 
                 // LOGIN LOGIK
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, pass);

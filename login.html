@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite </title>
     <style>
-        /* ── DESIGN (Basierend auf deinem Screenshot) ── */
+        /* ── DESIGN ── */
         body {
             margin: 0;
             padding: 0;
@@ -66,20 +66,23 @@
                 box-shadow: 0 4px 15px rgba(46, 134, 193, 0.4);
             }
 
+        /* ── GEÄNDERTE INPUT STYLES ── */
         input {
             width: 100%;
             padding: 15px;
             margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.15);
+            /* Hintergrund etwas heller für bessere Lesbarkeit von schwarzem Text */
+            background: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
-            color: white;
+            color: #000000; /* Textfarbe Schwarz */
+            font-size: 18px; /* Größere Schriftart */
             box-sizing: border-box;
             outline: none;
         }
 
             input::placeholder {
-                color: rgba(255, 255, 255, 0.6);
+                color: rgba(0, 0, 0, 0.5); /* Platzhalter in dunklem Grau */
             }
 
         .btn-submit {
@@ -128,7 +131,7 @@
         <div id="error-box" class="error-msg"></div>
 
         <input type="text" id="name-field" placeholder="Vollständiger Name" style="display: none;">
-        <input type="email" id="email-field" placeholder="E-Mail (z.B. name@th-nuernberg.de)">
+        <input type="email" id="email-field" placeholder="E-Mail (z.B. mayerma123456@th-nuernberg.de)">
         <input type="password" id="pass-field" placeholder="Passwort">
 
         <button class="btn-submit" id="submit-btn" onclick="handleAuth()">Anmelden</button>
@@ -142,7 +145,6 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Deine Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
             authDomain: "spickersite.firebaseapp.com",
@@ -158,7 +160,6 @@
 
         let mode = 'login';
 
-        // Tab-Wechsel (Login / Registrieren)
         window.switchTab = (newMode) => {
             mode = newMode;
             document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -168,7 +169,6 @@
             document.getElementById('error-box').style.display = 'none';
         };
 
-        // Haupt-Funktion für Login & Registrierung
         window.handleAuth = async () => {
             const email = document.getElementById('email-field').value.trim();
             const pass = document.getElementById('pass-field').value;
@@ -178,7 +178,6 @@
             errorBox.style.display = 'none';
 
             if (mode === 'register') {
-                // 1. E-Mail Domain Check
                 if (!email.endsWith('@th-nuernberg.de') && email !== 'julianknuhr92@gmail.com') {
                     errorBox.textContent = "Nur E-Mails der @th-nuernberg.de sind erlaubt!";
                     errorBox.style.display = 'block';
@@ -189,13 +188,12 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
 
-                    // 2. User-Daten in Firestore speichern
                     const isAdmin = (email === 'julianknuhr92@gmail.com');
                     await setDoc(doc(db, "users", user.uid), {
                         name: name,
                         email: email,
                         isAdmin: isAdmin,
-                        isApproved: isAdmin, // Admin ist sofort freigeschaltet
+                        isApproved: isAdmin,
                         createdAt: new Date()
                     });
 
@@ -205,13 +203,11 @@
                     errorBox.textContent = "Fehler: " + error.message;
                     errorBox.style.display = 'block';
                 }
-            } else { 
-                // LOGIN LOGIK
+            } else {
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
 
-                    // Check ob freigeschaltet
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
@@ -220,17 +216,16 @@
                             return;
                         }
 
-                        // Speichere Rolle für die anderen Seiten
                         sessionStorage.setItem('user_name', data.name);
                         sessionStorage.setItem('user_role', data.isAdmin ? 'admin' : 'student');
 
-                        window.location.href = 'index.html'; // Weiterleitung zur Hauptseite
-                    }                              
+                        window.location.href = 'index.html';
+                    }
                 } catch (error) {
                     errorBox.textContent = "Login fehlgeschlagen. Prüfe E-Mail und Passwort.";
                     errorBox.style.display = 'block';
                 }
-            }   
+            }
         };
     </script>
 </body>

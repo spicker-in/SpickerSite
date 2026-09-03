@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite</title>
+
+    <!-- EmailJS SDK mit deinem Public Key -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>
+        emailjs.init("1OMejyyUkbzLcwj7t");
+    </script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -33,31 +40,15 @@
             text-align: center;
             color: white;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-            animation: fadeIn 0.4s ease-out;
-            position: relative;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         h1 {
             font-size: 30px;
             margin: 0 0 20px 0;
-            letter-spacing: 1.5px;
             font-weight: 700;
             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
-        /* ── TABS ── */
         .tab-container {
             display: flex;
             background: rgba(0, 0, 0, 0.2);
@@ -73,9 +64,8 @@
             border-radius: 50px;
             font-weight: 600;
             font-size: 14px;
-            transition: all 0.3s ease;
             color: rgba(255, 255, 255, 0.8);
-            user-select: none;
+            transition: all 0.3s;
         }
 
             .tab.active {
@@ -84,7 +74,6 @@
                 box-shadow: 0 4px 15px rgba(46, 134, 193, 0.4);
             }
 
-        /* ── INPUTS ── */
         .input-group {
             position: relative;
             margin-bottom: 14px;
@@ -100,18 +89,12 @@
             color: #1a252f;
             font-size: 15px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
             input:focus {
-                background: #ffffff;
+                background: #fff;
                 border-color: #5dade2;
                 box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.35);
-            }
-
-            input::placeholder {
-                color: rgba(0, 0, 0, 0.5);
-                font-size: 14px;
             }
 
         .input-password-wrap input {
@@ -128,11 +111,8 @@
             cursor: pointer;
             font-size: 16px;
             color: #555;
-            padding: 0;
-            outline: none;
         }
 
-        /* ── BUTTONS & LINKS ── */
         .btn-submit {
             width: 100%;
             padding: 14px;
@@ -143,14 +123,12 @@
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
             margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
         }
 
             .btn-submit:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(41, 128, 185, 0.4);
             }
 
             .btn-submit:disabled {
@@ -168,11 +146,6 @@
             cursor: pointer;
         }
 
-            .forgot-link:hover {
-                color: #aed6f1;
-            }
-
-        /* ── MESSAGES ── */
         .msg-box {
             padding: 12px 14px;
             border-radius: 12px;
@@ -180,44 +153,26 @@
             margin-bottom: 15px;
             display: none;
             text-align: left;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
             .msg-box.error {
-                background: rgba(231, 76, 60, 0.35);
-                border: 1px solid rgba(231, 76, 60, 0.6);
-                color: #ffe6e6;
+                background: rgba(231, 76, 60, 0.85);
+                color: white;
                 display: block;
             }
 
             .msg-box.warning {
-                background: rgba(243, 156, 18, 0.35);
-                border: 1px solid rgba(243, 156, 18, 0.6);
-                color: #fdebd0;
+                background: rgba(243, 156, 18, 0.85);
+                color: white;
                 display: block;
             }
 
             .msg-box.success {
-                background: rgba(46, 204, 113, 0.35);
-                border: 1px solid rgba(46, 204, 113, 0.6);
-                color: #e8f8f5;
+                background: rgba(46, 204, 113, 0.85);
+                color: white;
                 display: block;
             }
-
-        .footer-text {
-            font-size: 12px;
-            margin-top: 25px;
-            opacity: 0.75;
-            line-height: 1.5;
-        }
-
-        #auto-login-overlay {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 10px;
-        }
 
         .spinner {
             width: 38px;
@@ -226,7 +181,7 @@
             border-top: 4px solid #ffffff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin-bottom: 15px;
+            margin: 0 auto 15px auto;
         }
 
         @keyframes spin {
@@ -239,13 +194,9 @@
             }
         }
 
-        /* ── MODAL ── */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(8px);
             display: none;
@@ -257,14 +208,12 @@
 
         .modal-card {
             background: rgba(27, 79, 114, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 20px;
             padding: 30px;
             max-width: 400px;
             width: 100%;
             color: white;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .btn-cancel {
@@ -275,7 +224,6 @@
             border-radius: 30px;
             margin-top: 10px;
             cursor: pointer;
-            font-size: 14px;
             width: 100%;
         }
     </style>
@@ -285,10 +233,9 @@
     <div class="login-card">
         <h1>SpickerSeite</h1>
 
-        <!-- Lade-Animation für Auto-Login Check -->
         <div id="auto-login-overlay">
             <div class="spinner"></div>
-            <p style="font-size: 14px; margin: 0;">Sitzung wird überprüft...</p>
+            <p style="font-size: 14px;">Sitzung wird überprüft...</p>
         </div>
 
         <div id="main-content" style="display: none;">
@@ -333,20 +280,20 @@
                 <button type="submit" class="btn-submit" id="reg-btn">Registrieren</button>
             </form>
 
-            <p class="footer-text">SpickerSeite TH Nürnberg<br>© 2026</p>
+            <p style="font-size: 12px; margin-top: 25px; opacity: 0.75;">SpickerSeite TH Nürnberg © 2026</p>
         </div>
     </div>
 
-    <!-- MODAL: PASSWORT VERGESSEN -->
+    <!-- MODAL PASSWORT VERGESSEN -->
     <div id="forgot-modal" class="modal-overlay">
         <div class="modal-card">
             <h2>🔒 Passwort vergessen?</h2>
-            <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px; line-height: 1.4;">
-                Gib deine E-Mail-Adresse ein. Deine Anfrage wird direkt an den Administrator gesendet:
+            <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px;">
+                Gib deine E-Mail ein. Du erhältst direkt einen Link per E-Mail, um dein Passwort zurückzusetzen:
             </p>
             <div id="forgot-msg" class="msg-box"></div>
             <input type="email" id="forgot-email" placeholder="E-Mail-Adresse" style="margin-bottom: 12px;">
-            <button type="button" class="btn-submit" onclick="handleForgotPassword()">Anfrage an Admin senden</button>
+            <button type="button" class="btn-submit" id="btn-forgot-submit" onclick="handleForgotPassword()">Reset-Link anfordern</button>
             <button type="button" class="btn-cancel" onclick="closeForgotModal()">Schließen</button>
         </div>
     </div>
@@ -358,6 +305,7 @@
             onAuthStateChanged,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
+            sendPasswordResetEmail,
             signOut
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
@@ -383,26 +331,28 @@
         const db = getFirestore(app);
 
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
+        const EMAILJS_SERVICE_ID = 'service_7twg9kk';
+        const EMAILJS_TEMPLATE_PW_RESET = 'template_ygaqm3e';
 
-        // ── AUTO-LOGIN ──
+        let isRegistering = false;
+
+        // AUTO-LOGIN CHECK
         onAuthStateChanged(auth, async (user) => {
+            if (isRegistering) return;
+
             if (user) {
                 const isSuperAdmin = (user.email && user.email.toLowerCase() === SUPERADMIN_EMAIL);
-
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
-
-                        // Wenn noch nicht freigeschaltet -> ausloggen
                         if (!data.isApproved && !isSuperAdmin) {
                             await signOut(auth);
-                            showWarning("⏳ Dein Account wartet noch auf die manuelle Freischaltung durch den Administrator.");
+                            showWarning("⏳ Dein Account wartet noch auf die Freischaltung durch den Administrator.");
                             showForm();
                             return;
                         }
 
-                        // Weiterleiten
                         if (data.isAdmin || isSuperAdmin) {
                             window.location.href = 'admin.html';
                         } else {
@@ -422,7 +372,6 @@
             document.getElementById('main-content').style.display = 'block';
         }
 
-        // ── TABS WECHSELN ──
         window.switchTab = (mode) => {
             clearMessages();
             const isLogin = (mode === 'login');
@@ -434,37 +383,25 @@
 
         window.togglePassword = (fieldId, btn) => {
             const input = document.getElementById(fieldId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                btn.textContent = '🔒';
-            } else {
-                input.type = 'password';
-                btn.textContent = '👁️';
-            }
+            input.type = input.type === 'password' ? 'text' : 'password';
+            btn.textContent = input.type === 'password' ? '👁️' : '🔒';
         };
 
         function showError(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.innerHTML = msg;
-            box.className = 'msg-box error';
+            box.innerHTML = msg; box.className = 'msg-box error';
         }
-
         function showWarning(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.innerHTML = msg;
-            box.className = 'msg-box warning';
+            box.innerHTML = msg; box.className = 'msg-box warning';
         }
-
         function showSuccess(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.innerHTML = msg;
-            box.className = 'msg-box success';
+            box.innerHTML = msg; box.className = 'msg-box success';
         }
-
         function clearMessages() {
             const box = document.getElementById('status-box');
-            box.className = 'msg-box';
-            box.textContent = '';
+            box.className = 'msg-box'; box.textContent = '';
         }
 
         function mapAuthError(errCode) {
@@ -480,7 +417,7 @@
             }
         }
 
-        // ── LOGIN HANDLER ──
+        // LOGIN
         window.handleLogin = async (e) => {
             e.preventDefault();
             clearMessages();
@@ -500,30 +437,20 @@
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-
-                    // Prüfen ob freigeschaltet
                     if (!data.isApproved && !isSuperAdmin) {
-                        showWarning("⏳ <strong>Account noch nicht freigeschaltet.</strong><br>Da du keine @th-nuernberg.de E-Mail nutzt, muss der Administrator deinen Account erst manuell freischalten.");
+                        showWarning("⏳ <strong>Account noch nicht freigeschaltet.</strong><br>Der Administrator muss deinen Account erst freischalten.");
                         await signOut(auth);
-                        btn.disabled = false;
-                        btn.textContent = 'Anmelden';
                         return;
                     }
-
-                    if (data.isAdmin || isSuperAdmin) {
-                        window.location.href = 'admin.html';
-                    } else {
-                        window.location.href = 'start.html';
-                    }
+                    window.location.href = (data.isAdmin || isSuperAdmin) ? 'admin.html' : 'start.html';
                 } else {
                     if (isSuperAdmin) {
                         window.location.href = 'admin.html';
                     } else {
-                        showError("Nutzerdaten nicht gefunden.");
+                        showError("Nutzerdaten nicht in der Datenbank gefunden.");
                         await signOut(auth);
                     }
                 }
-
             } catch (err) {
                 showError(mapAuthError(err.code));
             } finally {
@@ -532,7 +459,7 @@
             }
         };
 
-        // ── REGISTRIEREN HANDLER ──
+        // REGISTRIERUNG
         window.handleRegister = async (e) => {
             e.preventDefault();
             clearMessages();
@@ -543,7 +470,6 @@
             const passRepeat = document.getElementById('reg-pass-repeat').value;
             const btn = document.getElementById('reg-btn');
 
-            // Logik: TH-E-Mail = automatisch approved, alle anderen nicht
             const isTHN = email.endsWith('@th-nuernberg.de');
             const isSuperAdmin = (email === SUPERADMIN_EMAIL);
             const autoApproved = isTHN || isSuperAdmin;
@@ -552,7 +478,6 @@
                 showError("Das Passwort muss mindestens 6 Zeichen lang sein.");
                 return;
             }
-
             if (pass !== passRepeat) {
                 showError("Die Passwörter stimmen nicht überein!");
                 return;
@@ -560,52 +485,50 @@
 
             btn.disabled = true;
             btn.textContent = 'Erstelle Account...';
+            isRegistering = true;
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // In Firestore speichern
+                // In Firestore anlegen
                 await setDoc(doc(db, "users", user.uid), {
                     name: name,
                     email: email,
                     isAdmin: isSuperAdmin,
-                    isApproved: autoApproved, // @th-nuernberg.de sofort true, andere false
+                    isApproved: autoApproved,
                     createdAt: new Date()
                 });
 
                 if (isSuperAdmin) {
-                    showSuccess("👑 Admin-Account erfolgreich registriert! Weiterleitung...");
+                    showSuccess("👑 Admin-Account erstellt! Weiterleitung...");
                     setTimeout(() => window.location.href = 'admin.html', 1500);
                 } else if (isTHN) {
-                    showSuccess("✅ <strong>Registrierung erfolgreich!</strong><br>Als TH-Student bist du sofort freigeschaltet. Du wirst zum Login weitergeleitet...");
+                    showSuccess("✅ <strong>Registrierung erfolgreich!</strong><br>Als TH-Student bist du sofort freigeschaltet.");
                     await signOut(auth);
                     document.getElementById('form-register').reset();
-                    setTimeout(() => switchTab('login'), 2500);
+                    setTimeout(() => switchTab('login'), 2000);
                 } else {
-                    showWarning("📝 <strong>Registrierung eingegangen!</strong><br>Da du keine TH-E-Mail nutzt, muss der Administrator deinen Account erst manuell freischalten, bevor du dich einloggen kannst.");
+                    showWarning("📝 <strong>Registrierung eingegangen!</strong><br>Der Admin schaltet deinen Account in Kürze frei. Du erhältst eine Bestätigungsmail.");
                     await signOut(auth);
                     document.getElementById('form-register').reset();
-                    setTimeout(() => switchTab('login'), 5000);
+                    setTimeout(() => switchTab('login'), 4000);
                 }
-
             } catch (err) {
                 showError(mapAuthError(err.code));
             } finally {
+                isRegistering = false;
                 btn.disabled = false;
                 btn.textContent = 'Registrieren';
             }
         };
 
-        // ── PASSWORT ZURÜCKSETZEN (Anfrage an Admin) ──
+        // PASSWORT ZURÜCKSETZEN
         window.openForgotModal = () => {
             const loginMail = document.getElementById('login-email').value;
             if (loginMail) document.getElementById('forgot-email').value = loginMail;
-            document.getElementById('forgot-msg').className = 'msg-box';
-            document.getElementById('forgot-msg').textContent = '';
             document.getElementById('forgot-modal').style.display = 'flex';
         };
-
         window.closeForgotModal = () => {
             document.getElementById('forgot-modal').style.display = 'none';
         };
@@ -617,17 +540,37 @@
                 return;
             }
 
+            const btn = document.getElementById('btn-forgot-submit');
+            btn.disabled = true;
+            btn.textContent = 'Wird gesendet...';
+
             try {
+                // 1. Standard Firebase Password Reset Link erstellen & senden
+                await sendPasswordResetEmail(auth, email);
+
+                // 2. Eintrag in Firestore für Admin Dashboard
                 await addDoc(collection(db, "passwordRequests"), {
                     email: email,
                     requestedAt: new Date(),
                     status: "offen"
                 });
 
-                showSuccess("✅ Anfrage an den Admin übermittelt! Der Administrator wird dein Passwort zurücksetzen.", 'forgot-msg');
-                setTimeout(() => closeForgotModal(), 3500);
+                // 3. EmailJS Benachrichtigung
+                try {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_PW_RESET, {
+                        to_email: email,
+                        reset_link: window.location.origin + '/login.html',
+                        to_name: email
+                    });
+                } catch (e) { console.log('EmailJS info:', e); }
+
+                showSuccess("✅ Link zum Zurücksetzen wurde per E-Mail verschickt!", 'forgot-msg');
+                setTimeout(() => closeForgotModal(), 3000);
             } catch (err) {
-                showError("Fehler beim Senden: " + err.message, 'forgot-msg');
+                showError(mapAuthError(err.code) || err.message, 'forgot-msg');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Reset-Link anfordern';
             }
         };
     </script>

@@ -190,6 +190,13 @@
                 display: block;
             }
 
+            .msg-box.warning {
+                background: rgba(243, 156, 18, 0.35);
+                border: 1px solid rgba(243, 156, 18, 0.6);
+                color: #fdebd0;
+                display: block;
+            }
+
             .msg-box.success {
                 background: rgba(46, 204, 113, 0.35);
                 border: 1px solid rgba(46, 204, 113, 0.6);
@@ -232,14 +239,14 @@
             }
         }
 
-        /* ── MODAL (Passwort vergessen) ── */
+        /* ── MODAL ── */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(8px);
             display: none;
             align-items: center;
@@ -253,7 +260,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 20px;
             padding: 30px;
-            max-width: 380px;
+            max-width: 400px;
             width: 100%;
             color: white;
             text-align: center;
@@ -313,7 +320,7 @@
                     <input type="text" id="reg-name" placeholder="Vollständiger Name" required autocomplete="name">
                 </div>
                 <div class="input-group">
-                    <input type="email" id="reg-email" placeholder="TH-Mail (@th-nuernberg.de)" required autocomplete="email">
+                    <input type="email" id="reg-email" placeholder="E-Mail (z.B. @th-nuernberg.de)" required autocomplete="email">
                 </div>
                 <div class="input-group input-password-wrap">
                     <input type="password" id="reg-pass" placeholder="Passwort (mind. 6 Zeichen)" required autocomplete="new-password">
@@ -326,21 +333,21 @@
                 <button type="submit" class="btn-submit" id="reg-btn">Registrieren</button>
             </form>
 
-            <p class="footer-text">Nur für Studenten der TH Nürnberg<br>© 2026</p>
+            <p class="footer-text">SpickerSeite TH Nürnberg<br>© 2026</p>
         </div>
     </div>
 
     <!-- MODAL: PASSWORT VERGESSEN -->
     <div id="forgot-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>🔒 Passwort zurücksetzen</h2>
-            <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px;">
-                Gib deine E-Mail-Adresse ein. Firebase sendet dir einen sicheren Link zum Zurücksetzen deines Passworts.
+            <h2>🔒 Passwort vergessen?</h2>
+            <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px; line-height: 1.4;">
+                Gib deine E-Mail-Adresse ein. Deine Anfrage wird direkt an den Administrator gesendet:
             </p>
             <div id="forgot-msg" class="msg-box"></div>
             <input type="email" id="forgot-email" placeholder="E-Mail-Adresse" style="margin-bottom: 12px;">
-            <button type="button" class="btn-submit" onclick="handleForgotPassword()">Link senden</button>
-            <button type="button" class="btn-cancel" onclick="closeForgotModal()">Abbrechen</button>
+            <button type="button" class="btn-submit" onclick="handleForgotPassword()">Anfrage an Admin senden</button>
+            <button type="button" class="btn-cancel" onclick="closeForgotModal()">Schließen</button>
         </div>
     </div>
 
@@ -351,18 +358,17 @@
             onAuthStateChanged,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
-            sendEmailVerification,
-            sendPasswordResetEmail,
             signOut
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
             getFirestore,
             doc,
             setDoc,
-            getDoc
+            getDoc,
+            addDoc,
+            collection
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
             authDomain: "spickersite.firebaseapp.com",
@@ -376,37 +382,27 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Sprache der Firebase-Mails auf Deutsch stellen
-        auth.languageCode = 'de';
-
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
 
-        // ── AUTOMATISCHER LOGIN ──
+        // ── AUTO-LOGIN ──
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const isSuperAdmin = (user.email && user.email.toLowerCase() === SUPERADMIN_EMAIL);
-
-                // Falls Student noch nicht per Klick in der Mail verifiziert ist -> ausloggen
-                if (!user.emailVerified && !isSuperAdmin) {
-                    await signOut(auth);
-                    showForm();
-                    return;
-                }
 
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
 
-                        // Wenn durch Admin gesperrt
-                        if (data.isApproved === false && !isSuperAdmin) {
+                        // Wenn noch nicht freigeschaltet -> ausloggen
+                        if (!data.isApproved && !isSuperAdmin) {
                             await signOut(auth);
-                            showError("Dein Account wurde von einem Administrator gesperrt.");
+                            showWarning("⏳ Dein Account wartet noch auf die manuelle Freischaltung durch den Administrator.");
                             showForm();
                             return;
                         }
 
-                        // Weiterleitung
+                        // Weiterleiten
                         if (data.isAdmin || isSuperAdmin) {
                             window.location.href = 'admin.html';
                         } else {
@@ -426,7 +422,7 @@
             document.getElementById('main-content').style.display = 'block';
         }
 
-        // ── TABS ──
+        // ── TABS WECHSELN ──
         window.switchTab = (mode) => {
             clearMessages();
             const isLogin = (mode === 'login');
@@ -453,6 +449,12 @@
             box.className = 'msg-box error';
         }
 
+        function showWarning(msg, targetId = 'status-box') {
+            const box = document.getElementById(targetId);
+            box.innerHTML = msg;
+            box.className = 'msg-box warning';
+        }
+
         function showSuccess(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
             box.innerHTML = msg;
@@ -467,7 +469,7 @@
 
         function mapAuthError(errCode) {
             switch (errCode) {
-                case 'auth/invalid-email': return 'Ungültige E-Mail-Adresse.';
+                case 'auth/invalid-email': return 'Ungültiges E-Mail-Format.';
                 case 'auth/user-not-found': return 'Kein Account mit dieser E-Mail gefunden.';
                 case 'auth/wrong-password':
                 case 'auth/invalid-credential': return 'E-Mail oder Passwort ist falsch.';
@@ -495,36 +497,16 @@
                 const user = userCredential.user;
                 const isSuperAdmin = (email.toLowerCase() === SUPERADMIN_EMAIL);
 
-                // 1. Ist E-Mail verifiziert?
-                if (!user.emailVerified && !isSuperAdmin) {
-                    showError(`
-                            ⚠️ <strong>E-Mail noch nicht bestätigt!</strong><br>
-                            Bitte klicke auf den Link in der E-Mail von Firebase.<br>
-                            <a href="#" id="resend-mail-link" style="color:#fff; font-weight:bold; text-decoration:underline; display:inline-block; margin-top:6px;">✉️ Bestätigungs-Mail erneut senden</a>
-                        `);
-
-                    document.getElementById('resend-mail-link').onclick = async (ev) => {
-                        ev.preventDefault();
-                        try {
-                            await sendEmailVerification(user);
-                            alert("Eine neue Bestätigungs-E-Mail wurde an " + email + " gesendet! Prüfe bitte auch deinen Spam-Ordner.");
-                        } catch (resendErr) {
-                            alert("Fehler beim Senden: " + resendErr.message);
-                        }
-                    };
-
-                    await signOut(auth);
-                    return;
-                }
-
-                // 2. Admin & Freigabestatus abrufen
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
 
-                    if (data.isApproved === false && !isSuperAdmin) {
-                        showError("Dein Account wurde von einem Administrator gesperrt.");
+                    // Prüfen ob freigeschaltet
+                    if (!data.isApproved && !isSuperAdmin) {
+                        showWarning("⏳ <strong>Account noch nicht freigeschaltet.</strong><br>Da du keine @th-nuernberg.de E-Mail nutzt, muss der Administrator deinen Account erst manuell freischalten.");
                         await signOut(auth);
+                        btn.disabled = false;
+                        btn.textContent = 'Anmelden';
                         return;
                     }
 
@@ -534,7 +516,12 @@
                         window.location.href = 'start.html';
                     }
                 } else {
-                    window.location.href = isSuperAdmin ? 'admin.html' : 'start.html';
+                    if (isSuperAdmin) {
+                        window.location.href = 'admin.html';
+                    } else {
+                        showError("Nutzerdaten nicht gefunden.");
+                        await signOut(auth);
+                    }
                 }
 
             } catch (err) {
@@ -556,13 +543,10 @@
             const passRepeat = document.getElementById('reg-pass-repeat').value;
             const btn = document.getElementById('reg-btn');
 
+            // Logik: TH-E-Mail = automatisch approved, alle anderen nicht
             const isTHN = email.endsWith('@th-nuernberg.de');
             const isSuperAdmin = (email === SUPERADMIN_EMAIL);
-
-            if (!isTHN && !isSuperAdmin) {
-                showError("Nur offizielle E-Mails der @th-nuernberg.de sind zugelassen!");
-                return;
-            }
+            const autoApproved = isTHN || isSuperAdmin;
 
             if (pass.length < 6) {
                 showError("Das Passwort muss mindestens 6 Zeichen lang sein.");
@@ -578,33 +562,32 @@
             btn.textContent = 'Erstelle Account...';
 
             try {
-                // 1. Firebase Auth Account anlegen
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // 2. In Firestore eintragen
+                // In Firestore speichern
                 await setDoc(doc(db, "users", user.uid), {
                     name: name,
                     email: email,
                     isAdmin: isSuperAdmin,
-                    isApproved: true,
+                    isApproved: autoApproved, // @th-nuernberg.de sofort true, andere false
                     createdAt: new Date()
                 });
 
-                // 3. Native Firebase Bestätigungs-Mail senden
-                if (!isSuperAdmin) {
-                    await sendEmailVerification(user);
-                    showSuccess("✅ Registrierung erfolgreich! Wir haben dir eine Bestätigungs-E-Mail von Google/Firebase gesendet. Bitte klicke auf den Link in der Mail (auch im Spam nachsehen).");
+                if (isSuperAdmin) {
+                    showSuccess("👑 Admin-Account erfolgreich registriert! Weiterleitung...");
+                    setTimeout(() => window.location.href = 'admin.html', 1500);
+                } else if (isTHN) {
+                    showSuccess("✅ <strong>Registrierung erfolgreich!</strong><br>Als TH-Student bist du sofort freigeschaltet. Du wirst zum Login weitergeleitet...");
+                    await signOut(auth);
+                    document.getElementById('form-register').reset();
+                    setTimeout(() => switchTab('login'), 2500);
                 } else {
-                    showSuccess("Admin-Account erfolgreich registriert!");
+                    showWarning("📝 <strong>Registrierung eingegangen!</strong><br>Da du keine TH-E-Mail nutzt, muss der Administrator deinen Account erst manuell freischalten, bevor du dich einloggen kannst.");
+                    await signOut(auth);
+                    document.getElementById('form-register').reset();
+                    setTimeout(() => switchTab('login'), 5000);
                 }
-
-                await signOut(auth);
-                document.getElementById('form-register').reset();
-
-                setTimeout(() => {
-                    switchTab('login');
-                }, 5000);
 
             } catch (err) {
                 showError(mapAuthError(err.code));
@@ -614,7 +597,7 @@
             }
         };
 
-        // ── PASSWORT ZURÜCKSETZEN ──
+        // ── PASSWORT ZURÜCKSETZEN (Anfrage an Admin) ──
         window.openForgotModal = () => {
             const loginMail = document.getElementById('login-email').value;
             if (loginMail) document.getElementById('forgot-email').value = loginMail;
@@ -628,18 +611,23 @@
         };
 
         window.handleForgotPassword = async () => {
-            const email = document.getElementById('forgot-email').value.trim();
+            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
             if (!email) {
                 showError("Bitte gib deine E-Mail-Adresse ein.", 'forgot-msg');
                 return;
             }
 
             try {
-                await sendPasswordResetEmail(auth, email);
-                showSuccess("Link zum Zurücksetzen wurde per E-Mail gesendet! Prüfe dein Postfach.", 'forgot-msg');
+                await addDoc(collection(db, "passwordRequests"), {
+                    email: email,
+                    requestedAt: new Date(),
+                    status: "offen"
+                });
+
+                showSuccess("✅ Anfrage an den Admin übermittelt! Der Administrator wird dein Passwort zurücksetzen.", 'forgot-msg');
                 setTimeout(() => closeForgotModal(), 3500);
             } catch (err) {
-                showError(mapAuthError(err.code), 'forgot-msg');
+                showError("Fehler beim Senden: " + err.message, 'forgot-msg');
             }
         };
     </script>

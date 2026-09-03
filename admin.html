@@ -7,85 +7,37 @@
     <style>
         /* ── DESIGN (Admin-Style) ── */
         body {
-            margin: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1b4f72; 
-            color: white;
-            padding: 40px;
+            margin: 0; font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1b4f72; color: white; padding: 40px;
         }
-
         .admin-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 1100px;
-            margin: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            border-radius: 20px; padding: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 1100px; margin: auto; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-
         h2 { border-bottom: 2px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px; margin-top: 40px; }
-
         table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            overflow: hidden;
+            width: 100%; border-collapse: collapse; margin-top: 20px;
+            background: rgba(0, 0, 0, 0.2); border-radius: 10px; overflow: hidden;
         }
-
-        th, td {
-            text-align: left;
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
+        th, td { text-align: left; padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         th { background: rgba(255, 255, 255, 0.1); }
-
         .btn-action {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            margin-right: 5px;
-            transition: 0.2s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
+            padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer;
+            font-weight: bold; font-size: 12px; margin-right: 5px; transition: 0.2s;
+            text-decoration: none; display: inline-block; text-align: center;
         }
-
         .btn-approve { background: #2ecc71; color: white; }
         .btn-block { background: #f39c12; color: white; }
         .btn-delete { background: #e74c3c; color: white; }
         .btn-console { background: #3498db; color: white; } 
-        
         .btn-action:hover { opacity: 0.8; transform: scale(1.05); }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .status-active { background: #2ecc71; color: white; }
         .status-blocked { background: #e74c3c; color: white; }
-
         .form-group { margin-top: 30px; display: flex; gap: 10px; }
-        input { 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: none; 
-            flex: 1;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-        }
+        input { padding: 12px; border-radius: 8px; border: none; flex: 1; background: rgba(255, 255, 255, 0.9); color: #333; }
         .btn-add { background: #2ecc71; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        
-        #loading-text { text-align: center; padding: 20px; font-style: italic; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -99,8 +51,7 @@
 
         <div class="section">
             <h2>Nutzerverwaltung</h2>
-            <div id="loading-text">Daten werden geladen...</div>
-            <table id="user-table" style="display: none;">
+            <table id="user-table">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -110,7 +61,7 @@
                     </tr>
                 </thead>
                 <tbody id="user-list-body">
-                    <!-- Nutzer werden hier geladen -->
+                    <tr><td colspan="4" style="text-align:center;">Lade Nutzer...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -128,7 +79,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
@@ -143,7 +94,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Security Check
+        // Security Check & Echtzeit-Listener starten
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 window.location.href = 'index.html';
@@ -154,17 +105,22 @@
                 alert("Zugriff verweigert!");
                 window.location.href = 'start.html';
             } else {
-                loadUsers();
+                startUserListener();
             }
         });
 
-        async function loadUsers() {
-            try {
-                const querySnapshot = await getDocs(collection(db, "users"));
+        // ECHTZEIT-LISTENER: Aktualisiert die Liste automatisch bei jeder Änderung
+        function startUserListener() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
                 const tbody = document.getElementById('user-list-body');
                 tbody.innerHTML = "";
                 
-                querySnapshot.forEach((user) => {
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Keine Nutzer gefunden.</td></tr>';
+                    return;
+                }
+
+                snapshot.forEach((user) => {
                     const data = user.data();
                     if (data.email === 'julianknuhr92@gmail.com') return; 
 
@@ -191,25 +147,20 @@
                         </tr>
                     `;
                 });
-                
-                document.getElementById('loading-text').style.display = "none";
-                document.getElementById('user-table').style.display = "table";
-            } catch (error) {
-                console.error("Fehler beim Laden:", error);
-                document.getElementById('loading-text').textContent = "Fehler beim Laden der Daten.";
-            }
+            });
         }
 
         window.toggleUserStatus = async (uid, newStatus) => {
-            const userRef = doc(db, "users", uid);
-            await updateDoc(userRef, { isApproved: newStatus });
-            loadUsers();
+            await updateDoc(doc(db, "users", uid), { isApproved: newStatus });
         };
 
         window.deleteUser = async (uid) => {
-            if (confirm("Firestore-Daten löschen? \n\nWICHTIG: Klicke danach auf den blauen Button 'Auth-Konsole', um das Konto dort endgültig zu löschen, damit die E-Mail für eine Neuregistrierung frei wird.")) {
-                await deleteDoc(doc(db, "users", uid));
-                loadUsers();
+            if (confirm("Firestore-Daten löschen? \n\nDer Nutzer verschwindet sofort aus dieser Liste. Vergiss nicht, ihn auch in der Auth-Konsole zu löschen.")) {
+                try {
+                    await deleteDoc(doc(db, "users", uid));
+                } catch (e) {
+                    alert("Fehler beim Löschen: " + e.message);
+                }
             }
         };
 

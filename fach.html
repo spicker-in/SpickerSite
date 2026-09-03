@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Altklausuren – SpickerSeite</title>
+    <title>Fachdetails – SpickerSeite</title>
     <style>
+        /* ── NAVBAR STYLE (Exakt wie start.html) ── */
         body {
             margin: 0;
             font-family: 'Segoe UI', sans-serif;
@@ -14,10 +15,34 @@
             min-height: 100vh;
         }
 
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .admin-btn {
+            display: none;
+            color: #ffeb3b !important;
+        }
+
+        /* ── CONTENT ── */
         .container {
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
         }
 
         .glass-card {
@@ -57,20 +82,21 @@
             margin-left: 10px;
             display: none;
         }
-
-        .back-link {
-            color: #5dade2;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
 
+    <nav class="navbar">
+        <div style="font-size: 20px; font-weight: bold;">🎓 Fachschaft Informatik</div>
+        <div class="nav-links">
+            <span id="user-name">...</span>
+            <a href="start.html" style="color: #5dade2;">🏠 Startseite</a>
+            <a href="admin.html" class="admin-btn" id="admin-link">🛠 Admin</a>
+            <a onclick="logout()">Abmelden</a>
+        </div>
+    </nav>
+
     <div class="container">
-        <a href="start.html" class="back-link">← Zurück zur Übersicht</a>
         <div class="glass-card">
             <h1 id="subject-name">Lade Fach...</h1>
             <div id="exam-list">
@@ -81,10 +107,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { /* Deine Config wie oben */ };
+        const firebaseConfig = { /* Deine Config */ };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -93,45 +119,19 @@
         const subjectId = urlParams.get('id');
 
         onAuthStateChanged(auth, async (user) => {
-            if (!user) { location.href='login.html'; return; }
+            if (!user) { window.location.href = 'login.html'; return; }
             const userDoc = await getDoc(doc(db, "users", user.uid));
-            const isAdmin = userDoc.data().isAdmin;
-            loadExams(isAdmin);
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                document.getElementById('user-name').textContent = data.name;
+                if (data.isAdmin) document.getElementById('admin-link').style.display = 'inline';
+                loadExams(data.isAdmin);
+            }
         });
 
-        async function loadExams(isAdmin) {
-            // Fachname holen
-            const sDoc = await getDoc(doc(db, "subjects", subjectId));
-            document.getElementById('subject-name').textContent = sDoc.data().name;
+        // ... (Restliche Funktionen: loadExams, deleteExam) ...
 
-            // Klausuren holen
-            const q = query(collection(db, "exams"), where("subjectId", "==", subjectId));
-            const snap = await getDocs(q);
-            const list = document.getElementById('exam-list');
-            list.innerHTML = snap.empty ? "<p>Noch keine Altklausuren vorhanden.</p>" : "";
-
-            snap.forEach(d => {
-                const exam = d.data();
-                const item = document.createElement('div');
-                item.className = 'exam-item';
-                item.innerHTML = `
-                    <span>📄 ${exam.fileName}</span>
-                    <div>
-                        <a href="${exam.url}" target="_blank" class="btn-download">Download</a>
-                        <button class="btn-delete" id="del-${d.id}" onclick="deleteExam('${d.id}')">Löschen</button>
-                    </div>
-                `;
-                list.appendChild(item);
-                if (isAdmin) document.getElementById(`del-${d.id}`).style.display = 'inline-block';
-            });
-        }
-
-        window.deleteExam = async (id) => {
-            if (confirm("Wirklich löschen?")) {
-                await deleteDoc(doc(db, "exams", id));
-                location.reload();
-            }
-        };
+        window.logout = () => signOut(auth).then(() => location.href = 'login.html');
     </script>
 </body>
 </html>

@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login – SpickerSeite</title>
+    <title>Login & Registrierung – SpickerSeite</title>
+
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>
+        emailjs.init("1OMejyyUkbzLcwj7t");
+    </script>
 
     <style>
         * {
@@ -261,7 +267,7 @@
                     <input type="text" id="reg-name" placeholder="Vollständiger Name" required autocomplete="name">
                 </div>
                 <div class="input-group">
-                    <input type="email" id="reg-email" placeholder="E-Mail (z.B. @th-nuernberg.de)" required autocomplete="email">
+                    <input type="email" id="reg-email" placeholder="E-Mail-Adresse" required autocomplete="email">
                 </div>
                 <div class="input-group input-password-wrap">
                     <input type="password" id="reg-pass" placeholder="Passwort (mind. 6 Zeichen)" required autocomplete="new-password">
@@ -271,7 +277,7 @@
                     <input type="password" id="reg-pass-repeat" placeholder="Passwort wiederholen" required autocomplete="new-password">
                     <button type="button" class="toggle-pw-btn" onclick="togglePassword('reg-pass-repeat', this)">👁️</button>
                 </div>
-                <button type="submit" class="btn-submit" id="reg-btn">Registrieren</button>
+                <button type="submit" class="btn-submit" id="reg-btn">Konto erstellen</button>
             </form>
 
             <p style="font-size: 12px; margin-top: 25px; opacity: 0.75;">SpickerSeite TH Nürnberg © 2026</p>
@@ -283,7 +289,7 @@
         <div class="modal-card">
             <h2>🔒 Passwort vergessen?</h2>
             <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px;">
-                Gib deine registrierte E-Mail-Adresse ein. Firebase sendet dir direkt einen Link zum Zurücksetzen:
+                Gib deine registrierte E-Mail-Adresse ein, um einen Reset-Link zu erhalten:
             </p>
             <div id="forgot-msg" class="msg-box"></div>
             <input type="email" id="forgot-email" placeholder="E-Mail-Adresse" style="margin-bottom: 12px;">
@@ -322,14 +328,21 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Deutsche Fehlermeldungen und E-Mail-Sprache für Firebase Auth
         auth.languageCode = 'de';
 
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
+        const EMAILJS_SERVICE_ID = 'service_7twg9kk';
+        // HINWEIS: Trage hier die Template-ID deines Verifizierungs-Templates in EmailJS ein:
+        const EMAILJS_TEMPLATE_VERIFY = 'template_fygcnxh';
 
         let isRegistering = false;
 
-        // AUTO-LOGIN CHECK
+        // Hilfsfunktion: Zufälligen Token generieren
+        function generateToken() {
+            return Math.random().toString(36).substring(2) + Date.now().toString(36);
+        }
+
+        // 1. AUTO-LOGIN CHECK
         onAuthStateChanged(auth, async (user) => {
             if (isRegistering) return;
 
@@ -339,18 +352,17 @@
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
+
+                        // Wenn nicht freigeschaltet und kein SuperAdmin -> Logout
                         if (!data.isApproved && !isSuperAdmin) {
                             await signOut(auth);
-                            showWarning("⏳ Dein Account wartet noch auf die Freischaltung durch den Administrator.");
+                            showWarning("⏳ <strong>E-Mail noch nicht bestätigt!</strong><br>Bitte klicke auf den Bestätigungslink in deiner E-Mail.");
                             showForm();
                             return;
                         }
 
-                        if (data.isAdmin || isSuperAdmin) {
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'start.html';
-                        }
+                        // Erfolgreicher Auto-Login -> Weiterleiten
+                        window.location.href = (data.isAdmin || isSuperAdmin) ? 'admin.html' : 'start.html';
                         return;
                     }
                 } catch (e) {
@@ -409,12 +421,12 @@
                 case 'auth/invalid-credential': return 'E-Mail oder Passwort ist falsch.';
                 case 'auth/email-already-in-use': return 'Diese E-Mail ist bereits registriert.';
                 case 'auth/weak-password': return 'Das Passwort muss mindestens 6 Zeichen lang sein.';
-                case 'auth/too-many-requests': return 'Zu viele Versuche. Bitte kurz warten.';
+                case 'auth/too-many-requests': return 'Zu viele Versuche. Bitte warte einen kurzen Moment.';
                 default: return 'Fehler: ' + errCode;
             }
         }
 
-        // LOGIN
+        // 2. LOGIN LOGIK
         window.handleLogin = async (e) => {
             e.preventDefault();
             clearMessages();
@@ -434,11 +446,15 @@
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
+
+                    // Prüfung: Wurde die E-Mail schon bestätigt?
                     if (!data.isApproved && !isSuperAdmin) {
-                        showWarning("⏳ <strong>Account noch nicht freigeschaltet.</strong><br>Der Administrator muss deinen Account erst freischalten.");
+                        showWarning("⏳ <strong>E-Mail noch nicht bestätigt!</strong><br>Bitte prüfe dein Postfach (auch den Spam-Ordner) und klicke auf den Aktivierungslink.");
                         await signOut(auth);
                         return;
                     }
+
+                    // Weiterleitung
                     window.location.href = (data.isAdmin || isSuperAdmin) ? 'admin.html' : 'start.html';
                 } else {
                     if (isSuperAdmin) {
@@ -456,7 +472,7 @@
             }
         };
 
-        // REGISTRIERUNG
+        // 3. REGISTRIERUNGS-LOGIK (MIT EMAILJS & TOKEN)
         window.handleRegister = async (e) => {
             e.preventDefault();
             clearMessages();
@@ -466,10 +482,6 @@
             const pass = document.getElementById('reg-pass').value;
             const passRepeat = document.getElementById('reg-pass-repeat').value;
             const btn = document.getElementById('reg-btn');
-
-            const isTHN = email.endsWith('@th-nuernberg.de');
-            const isSuperAdmin = (email === SUPERADMIN_EMAIL);
-            const autoApproved = isTHN || isSuperAdmin;
 
             if (pass.length < 6) {
                 showError("Das Passwort muss mindestens 6 Zeichen lang sein.");
@@ -481,46 +493,63 @@
             }
 
             btn.disabled = true;
-            btn.textContent = 'Erstelle Account...';
+            btn.textContent = 'Konto wird erstellt...';
             isRegistering = true;
 
+            const isSuperAdmin = (email === SUPERADMIN_EMAIL);
+            const verifyToken = generateToken();
+
             try {
+                // 1. Firebase Auth User anlegen
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // In Firestore anlegen
+                // 2. In Firestore speichern (Standard: isApproved = false)
                 await setDoc(doc(db, "users", user.uid), {
                     name: name,
                     email: email,
                     isAdmin: isSuperAdmin,
-                    isApproved: autoApproved,
+                    isApproved: isSuperAdmin, // Superadmin ist sofort aktiv
+                    verifyToken: isSuperAdmin ? "" : verifyToken,
                     createdAt: new Date()
                 });
 
                 if (isSuperAdmin) {
                     showSuccess("👑 Admin-Account erstellt! Weiterleitung...");
                     setTimeout(() => window.location.href = 'admin.html', 1500);
-                } else if (isTHN) {
-                    showSuccess("✅ <strong>Registrierung erfolgreich!</strong><br>Als TH-Student bist du sofort freigeschaltet.");
-                    await signOut(auth);
-                    document.getElementById('form-register').reset();
-                    setTimeout(() => switchTab('login'), 2000);
-                } else {
-                    showWarning("📝 <strong>Registrierung eingegangen!</strong><br>Der Admin schaltet deinen Account in Kürze frei. Du erhältst dann eine Freischaltungs-Mail.");
-                    await signOut(auth);
-                    document.getElementById('form-register').reset();
-                    setTimeout(() => switchTab('login'), 4000);
+                    return;
                 }
+
+                // 3. Verifizierungs-Link erstellen & via EmailJS senden
+                const verifyLink = `${window.location.origin}/verify.html?uid=${user.uid}&token=${verifyToken}`;
+
+                try {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_VERIFY, {
+                        to_email: email,
+                        to_name: name,
+                        verify_link: verifyLink
+                    });
+                } catch (mailErr) {
+                    console.warn("EmailJS Fehler:", mailErr);
+                }
+
+                // 4. Ausloggen und Nutzer auffordern, E-Mail zu bestätigen
+                await signOut(auth);
+                document.getElementById('form-register').reset();
+
+                showSuccess("✅ <strong>Fast geschafft!</strong><br>Wir haben dir einen Bestätigungslink per E-Mail geschickt. Bitte klicke darauf, um dein Konto zu aktivieren.");
+                setTimeout(() => switchTab('login'), 4000);
+
             } catch (err) {
                 showError(mapAuthError(err.code));
             } finally {
                 isRegistering = false;
                 btn.disabled = false;
-                btn.textContent = 'Registrieren';
+                btn.textContent = 'Konto erstellen';
             }
         };
 
-        // PASSWORT ZURÜCKSETZEN
+        // 4. PASSWORT ZURÜCKSETZEN
         window.openForgotModal = () => {
             const loginMail = document.getElementById('login-email').value;
             if (loginMail) document.getElementById('forgot-email').value = loginMail;
@@ -528,6 +557,7 @@
             document.getElementById('forgot-msg').textContent = '';
             document.getElementById('forgot-modal').style.display = 'flex';
         };
+
         window.closeForgotModal = () => {
             document.getElementById('forgot-modal').style.display = 'none';
         };
@@ -544,15 +574,13 @@
             btn.textContent = 'Wird gesendet...';
 
             try {
-                // OHNE actionCodeSettings aufrufen -> Wirft keinen 'unauthorized-continue-uri' Fehler mehr!
                 await sendPasswordResetEmail(auth, email);
-
                 showSuccess("✅ E-Mail zum Zurücksetzen wurde gesendet! Bitte prüfe deinen Posteingang und Spam-Ordner.", 'forgot-msg');
                 setTimeout(() => closeForgotModal(), 4000);
             } catch (err) {
                 console.error("Firebase Reset Fehler:", err);
                 if (err.code === 'auth/user-not-found') {
-                    showError("Es existiert kein Account mit dieser E-Mail-Adresse in Firebase.", 'forgot-msg');
+                    showError("Es existiert kein Account mit dieser E-Mail-Adresse.", 'forgot-msg');
                 } else {
                     showError(mapAuthError(err.code) || err.message, 'forgot-msg');
                 }

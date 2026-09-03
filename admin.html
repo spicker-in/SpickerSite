@@ -5,31 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin-Panel – SpickerSeite</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            margin: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background: #1b4f72; color: white; min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: #1b4f72;
+            color: white;
+            min-height: 100vh;
         }
 
         /* ── NAVBAR ── */
         .navbar {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
-            padding: 15px 40px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .nav-links a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; cursor: pointer; }
-        .admin-btn { color: #ffeb3b !important; }
 
-        /* ── ADMIN CONTENT ── */
-        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .admin-btn {
+            color: #ffeb3b !important;
+        }
+
+        /* ── ADMIN CONTAINER ── */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
         .admin-card {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
-            border-radius: 30px; padding: 35px; border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 35px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        h1 { margin-top: 0; font-size: 28px; }
-        h2 { border-bottom: 2px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px; margin-top: 35px; font-size: 20px; }
+        h1 {
+            margin-top: 0;
+            font-size: 28px;
+            letter-spacing: 0.5px;
+        }
+
+        h2 {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+            margin-top: 35px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
         /* ── TABELLEN ── */
         .table-responsive {
@@ -38,24 +86,58 @@
         }
 
         table {
-            width: 100%; border-collapse: collapse;
-            background: rgba(0, 0, 0, 0.25); border-radius: 12px; overflow: hidden;
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            overflow: hidden;
         }
-        th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 14px; }
-        th { background: rgba(255, 255, 255, 0.15); font-weight: 600; }
+
+        th, td {
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+        }
 
         .pending-row {
-            background: rgba(243, 156, 18, 0.15);
+            background: rgba(243, 156, 18, 0.18);
         }
 
         /* ── BADGES & BUTTONS ── */
         .badge {
-            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
         }
-        .badge-active { background: #2ecc71; color: white; }
-        .badge-pending { background: #e67e22; color: white; animation: pulse 1.5s infinite; }
-        .badge-admin { background: #f1c40f; color: #1b4f72; }
-        .badge-user { background: #7f8c8d; color: white; }
+
+        .badge-active {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .badge-pending {
+            background: #e67e22;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .badge-admin {
+            background: #f1c40f;
+            color: #1b4f72;
+        }
+
+        .badge-user {
+            background: #7f8c8d;
+            color: white;
+        }
 
         @keyframes pulse {
             0% { opacity: 0.8; }
@@ -64,19 +146,50 @@
         }
 
         .btn-action {
-            padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer;
-            font-weight: bold; font-size: 12px; margin-right: 5px; margin-bottom: 3px;
-            transition: all 0.2s; display: inline-block;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 3px;
+            transition: all 0.2s;
+            display: inline-block;
+            color: white;
         }
-        .btn-approve { background: #2ecc71; color: white; }
-        .btn-block { background: #e67e22; color: white; }
-        .btn-make-admin { background: #f1c40f; color: #1b4f72; }
-        .btn-remove-admin { background: #95a5a6; color: white; }
-        .btn-delete { background: #e74c3c; color: white; }
-        
-        .btn-action:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        .loading-row { text-align: center; padding: 30px; opacity: 0.8; }
+        .btn-approve {
+            background: #2ecc71;
+        }
+
+        .btn-block {
+            background: #e67e22;
+        }
+
+        .btn-make-admin {
+            background: #f1c40f;
+            color: #1b4f72 !important;
+        }
+
+        .btn-remove-admin {
+            background: #95a5a6;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+        }
+
+        .btn-action:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+
+        .loading-row {
+            text-align: center;
+            padding: 30px;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -87,7 +200,7 @@
             <span id="user-name">Lade...</span>
             <a href="start.html" style="color: #5dade2;">🏠 Startseite</a>
             <a href="admin.html" class="admin-btn">🛠 Admin</a>
-            <a onclick="logout()">Abmelden</a>
+            <a id="logout-btn" onclick="logout()" style="cursor: pointer;">Abmelden</a>
         </div>
     </nav>
 
@@ -165,6 +278,17 @@
 
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
 
+        // ── ABMELDEN FUNKTION ──
+        window.logout = async () => {
+            try {
+                await signOut(auth);
+                window.location.href = 'login.html';
+            } catch (err) {
+                console.error("Fehler beim Logout:", err);
+                window.location.href = 'login.html';
+            }
+        };
+
         // ── AUTH CHECK ──
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
@@ -173,29 +297,38 @@
             }
 
             const isSuperAdmin = (user.email && user.email.toLowerCase() === SUPERADMIN_EMAIL);
-            const userDoc = await getDoc(doc(db, "users", user.uid));
+            
+            try {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
 
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                if (!data.isAdmin && !isSuperAdmin) {
-                    alert("Zugriff verweigert: Du besitzt keine Administrator-Rechte.");
-                    window.location.href = 'start.html';
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    if (!data.isAdmin && !isSuperAdmin) {
+                        alert("Zugriff verweigert: Du besitzt keine Administrator-Rechte.");
+                        window.location.href = 'start.html';
+                        return;
+                    }
+                    document.getElementById('user-name').textContent = (data.name || user.email) + " (Admin)";
+                } else if (isSuperAdmin) {
+                    document.getElementById('user-name').textContent = "Julian (Haupt-Admin)";
+                } else {
+                    window.location.href = 'login.html';
                     return;
                 }
-                document.getElementById('user-name').textContent = (data.name || user.email) + " (Admin)";
-                startListeners();
-            } else if (isSuperAdmin) {
-                document.getElementById('user-name').textContent = "Julian (Haupt-Admin)";
-                startListeners();
-            } else {
-                window.location.href = 'login.html';
+
+                // Listener starten
+                startUserListener();
+                startPasswordRequestsListener();
+
+            } catch (err) {
+                console.error("Auth-Check Fehler:", err);
+                if (isSuperAdmin) {
+                    document.getElementById('user-name').textContent = "Julian (Haupt-Admin)";
+                    startUserListener();
+                    startPasswordRequestsListener();
+                }
             }
         });
-
-        function startListeners() {
-            startUserListener();
-            startPasswordRequestsListener();
-        }
 
         // ── 1. LIVE USER LISTE ──
         function startUserListener() {
@@ -265,7 +398,7 @@
                     tbody.appendChild(tr);
                 });
             }, (error) => {
-                console.error("Fehler beim Laden:", error);
+                console.error("Fehler beim Laden der Nutzer:", error);
                 document.getElementById('user-list-body').innerHTML = 
                     '<tr><td colspan="5" style="color:#ff6b6b; text-align:center;">Fehler beim Laden: ' + error.message + '</td></tr>';
             });
@@ -301,6 +434,10 @@
                     `;
                     tbody.appendChild(tr);
                 });
+            }, (error) => {
+                console.error("Fehler bei Passwort-Anfragen:", error);
+                document.getElementById('reset-requests-body').innerHTML = 
+                    '<tr><td colspan="3" style="text-align:center; opacity:0.7;">Keine offenen Anfragen oder Regeln nicht gesetzt.</td></tr>';
             });
         }
 
@@ -345,8 +482,6 @@
                 alert("Fehler: " + err.message);
             }
         };
-
-        window.logout = () => signOut(auth).then(() => location.href = 'login.html');
 
         function escapeHtml(text) {
             const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };

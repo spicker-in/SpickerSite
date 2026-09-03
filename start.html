@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Startseite – Fachschaft Informatik</title>
+    <style>
+        /* ── DESIGN (Passend zur Login-Seite) ── */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-links a, .logout-btn {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .admin-link {
+            display: none;
+            color: #ffeb3b !important;
+        }
+
+        .container {
+            padding: 40px;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+            margin-bottom: 30px;
+            box-sizing: border-box;
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .subject-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+            .subject-card:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: translateY(-5px);
+            }
+
+        .upload-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: 50px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-upload {
+            background: #5dade2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">🎓 Fachschaft Informatik</div>
+        <div class="nav-links">
+            <span id="user-display">Laden...</span>
+            <a href="admin.html" class="admin-link" id="admin-nav">🛠 Admin-Bereich</a>
+            <a class="logout-btn" onclick="logout()">Abmelden</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="glass-card">
+            <h1>SpickerSeite</h1>
+            <input type="text" class="search-box" placeholder="Fächer suchen..." id="search-input">
+
+            <div class="subject-grid" id="subject-list">
+                <!-- Fächer werden hier geladen -->
+            </div>
+
+            <div class="upload-section">
+                <h3>Altklausur hochladen</h3>
+                <p>Hilf anderen Studenten und lade deine Dokumente hoch.</p>
+                <button class="btn btn-upload" onclick="alert('Upload-Funktion hier implementieren')">Datei auswählen & hochladen</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
+            authDomain: "spickersite.firebaseapp.com",
+            projectId: "spickersite",
+            storageBucket: "spickersite.firebasestorage.app",
+            messagingSenderId: "515794720428",
+            appId: "1:515794720428:web:f509322fe888fb3c8a3109"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Auth Check
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    document.getElementById('user-display').textContent = "Hallo, " + userData.name;
+
+                    if (userData.isAdmin) {
+                        document.getElementById('admin-nav').style.display = 'inline';
+                    }
+                }
+                loadSubjects();
+            }
+        });
+
+        async function loadSubjects() {
+            const querySnapshot = await getDocs(collection(db, "subjects"));
+            const list = document.getElementById('subject-list');
+            list.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                list.innerHTML += `
+                    <div class="subject-card" onclick="viewSubject('${doc.id}')">
+                        <h3>${data.name}</h3>
+                        <p>${data.info || 'Keine Info'}</p>
+                    </div>
+                `;
+            });
+        }
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.href = 'login.html');
+        };
+    </script>
+</body>
+</html>

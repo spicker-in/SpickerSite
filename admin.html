@@ -5,90 +5,161 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin-Panel – SpickerSeite</title>
     <style>
-        /* ── DESIGN (Admin-Style) ── */
+        :root {
+            --primary-blue: #4a69bd;
+            --bg-light: #f4f7f6;
+            --text-dark: #2f3542;
+            --border-color: #dcdde1;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+        }
+
         body {
             margin: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1b4f72; 
-            color: white;
-            padding: 40px;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--primary-blue);
+            background-image: linear-gradient(175deg, #ffffff 50%, var(--primary-blue) 50.5%);
+            background-attachment: fixed;
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: white;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .navbar .logo {
+            color: var(--primary-blue);
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 95%;
+            margin: 50px auto;
         }
 
         .admin-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 1000px;
-            margin: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            padding: 40px;
         }
 
-        h2 { border-bottom: 2px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px; margin-top: 40px; }
+        h1 { font-size: 28px; margin-bottom: 10px; color: var(--primary-blue); }
+        h2 { font-size: 20px; margin-top: 40px; border-bottom: 2px solid #eee; padding-bottom: 10px; color: #57606f; }
 
+        .back-link {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        /* Tabelle Styling */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            overflow: hidden;
         }
 
-        th, td {
+        th {
+            background: #f8f9fa;
             text-align: left;
             padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #747d8c;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #eee;
         }
 
-        th { background: rgba(255, 255, 255, 0.1); }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
 
+        tr:hover { background: #fcfcfc; }
+
+        /* Buttons */
         .btn-action {
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 8px 15px;
+            border-radius: 4px;
             border: none;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            margin-right: 5px;
+            font-weight: 600;
+            font-size: 13px;
             transition: 0.2s;
+            margin-right: 5px;
         }
 
-        .btn-approve { background: #2ecc71; color: white; }
-        .btn-block { background: #f39c12; color: white; }
-        .btn-delete { background: #e74c3c; color: white; }
-        .btn-action:hover { opacity: 0.8; transform: scale(1.05); }
+        .btn-approve { background: var(--success); color: white; }
+        .btn-block { background: var(--warning); color: white; }
+        .btn-delete { background: var(--danger); color: white; }
+        .btn-action:hover { opacity: 0.8; transform: translateY(-1px); }
 
         .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: bold;
         }
-        .status-active { background: #2ecc71; color: white; }
-        .status-blocked { background: #e74c3c; color: white; }
+        .status-active { background: #e3fcef; color: var(--success); }
+        .status-blocked { background: #ffeaa7; color: #d35400; }
 
-        .form-group { margin-top: 30px; display: flex; gap: 10px; }
-        input { 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: none; 
-            flex: 1;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
+        /* Formular */
+        .form-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
         }
-        .btn-add { background: #2ecc71; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        input {
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            flex: 1;
+            font-size: 15px;
+        }
+
+        input:focus { outline: none; border-color: var(--primary-blue); }
+
+        .btn-add {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <div class="admin-card">
-        <h1>🛠 Admin Dashboard</h1>
-        <a href="start.html" style="color: #5dade2; text-decoration: none; font-weight: bold;">← Zurück zur Startseite</a>
+    <nav class="navbar">
+        <div class="logo">🛠 Admin Dashboard</div>
+        <div><a href="start.html" class="back-link" style="margin:0">Zur Startseite</a></div>
+    </nav>
 
-        <div class="section">
-            <h2>Nutzerverwaltung</h2>
+    <div class="container">
+        <div class="admin-card">
+            <a href="start.html" class="back-link">← Zurück zur Übersicht</a>
+            <h1>Nutzerverwaltung</h1>
+            <p style="color: #747d8c;">Hier kannst du neue Registrierungen freischalten oder Nutzer entfernen.</p>
+
             <table id="user-table">
                 <thead>
                     <tr>
@@ -99,16 +170,14 @@
                     </tr>
                 </thead>
                 <tbody id="user-list-body">
-                    <!-- Nutzer werden hier geladen -->
+                    <!-- Wird geladen -->
                 </tbody>
             </table>
-        </div>
 
-        <div class="section">
             <h2>Neues Fach hinzufügen</h2>
             <div class="form-group">
-                <input type="text" id="new-subject-name" placeholder="z.B. Mathematik 1">
-                <input type="text" id="new-subject-info" placeholder="Kurzinfo zum Fach">
+                <input type="text" id="new-subject-name" placeholder="Name des Fachs (z.B. Informatik 1)">
+                <input type="text" id="new-subject-info" placeholder="Kurzinfo">
                 <button class="btn-add" onclick="addSubject()">Hinzufügen</button>
             </div>
         </div>
@@ -132,15 +201,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Security Check
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!user) { window.location.href = 'index.html'; return; }
             const userDoc = await getDoc(doc(db, "users", user.uid));
             if (!userDoc.exists() || !userDoc.data().isAdmin) {
-                alert("Zugriff verweigert!");
+                alert("Keine Admin-Rechte!");
                 window.location.href = 'start.html';
             } else {
                 loadUsers();
@@ -152,26 +217,27 @@
             const tbody = document.getElementById('user-list-body');
             tbody.innerHTML = "";
             
-            querySnapshot.forEach((user) => {
-                const data = user.data();
-                if (data.email === 'julianknuhr92@gmail.com') return; // Admin selbst nicht in Liste anzeigen
+            querySnapshot.forEach((userDoc) => {
+                const data = userDoc.data();
+                // Deinen eigenen Account nicht anzeigen, um versehentliches Löschen zu verhindern
+                if (data.email === 'julianknuhr92@gmail.com') return; 
 
                 const statusBadge = data.isApproved 
                     ? '<span class="status-badge status-active">Aktiv</span>' 
                     : '<span class="status-badge status-blocked">Gesperrt</span>';
 
                 const actionBtn = data.isApproved
-                    ? `<button class="btn-action btn-block" onclick="toggleUserStatus('${user.id}', false)">Sperren</button>`
-                    : `<button class="btn-action btn-approve" onclick="toggleUserStatus('${user.id}', true)">Freischalten</button>`;
+                    ? `<button class="btn-action btn-block" onclick="toggleUserStatus('${userDoc.id}', false)">Sperren</button>`
+                    : `<button class="btn-action btn-approve" onclick="toggleUserStatus('${userDoc.id}', true)">Freischalten</button>`;
 
                 tbody.innerHTML += `
                     <tr>
-                        <td>${data.name || 'Kein Name'}</td>
+                        <td><strong>${data.name || 'Unbekannt'}</strong></td>
                         <td>${data.email}</td>
                         <td>${statusBadge}</td>
                         <td>
                             ${actionBtn}
-                            <button class="btn-action btn-delete" onclick="deleteUser('${user.id}')">Löschen</button>
+                            <button class="btn-action btn-delete" onclick="deleteUser('${userDoc.id}')">Löschen</button>
                         </td>
                     </tr>
                 `;
@@ -179,26 +245,41 @@
         }
 
         window.toggleUserStatus = async (uid, newStatus) => {
-            const userRef = doc(db, "users", uid);
-            await updateDoc(userRef, { isApproved: newStatus });
-            loadUsers();
+            try {
+                const userRef = doc(db, "users", uid);
+                await updateDoc(userRef, { isApproved: newStatus });
+                loadUsers();
+            } catch (e) {
+                alert("Fehler beim Aktualisieren: " + e.message);
+            }
         };
 
         window.deleteUser = async (uid) => {
-            if (confirm("Möchtest du diesen Nutzer wirklich unwiderruflich aus der Datenbank löschen?")) {
-                await deleteDoc(doc(db, "users", uid));
-                loadUsers();
+            if (confirm("Nutzer wirklich aus der Datenbank löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) {
+                try {
+                    // WICHTIG: Hier wird das Dokument mit der ID 'uid' aus der Collection 'users' gelöscht
+                    await deleteDoc(doc(db, "users", uid));
+                    alert("Nutzer wurde erfolgreich entfernt.");
+                    loadUsers(); // Liste aktualisieren
+                } catch (e) {
+                    console.error("Löschfehler:", e);
+                    alert("Fehler beim Löschen: " + e.message);
+                }
             }
         };
 
         window.addSubject = async () => {
             const name = document.getElementById('new-subject-name').value;
             const info = document.getElementById('new-subject-info').value;
-            if(!name) return;
-            await setDoc(doc(collection(db, "subjects")), { name, info });
-            alert("Fach hinzugefügt!");
-            document.getElementById('new-subject-name').value = "";
-            document.getElementById('new-subject-info').value = "";
+            if(!name) return alert("Bitte Namen eingeben");
+            try {
+                await setDoc(doc(collection(db, "subjects")), { name, info });
+                alert("Fach erfolgreich erstellt!");
+                document.getElementById('new-subject-name').value = "";
+                document.getElementById('new-subject-info').value = "";
+            } catch (e) {
+                alert("Fehler: " + e.message);
+            }
         };
     </script>
 </body>

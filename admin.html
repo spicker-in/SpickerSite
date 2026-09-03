@@ -9,7 +9,7 @@
         body {
             margin: 0;
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1b4f72; /* Dunklerer Hintergrund für Admin */
+            background: #1b4f72; 
             color: white;
             padding: 40px;
         }
@@ -20,74 +20,104 @@
             border-radius: 20px;
             padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 900px;
+            max-width: 1000px;
             margin: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        h2 { border-bottom: 2px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px; }
+        h2 { border-bottom: 2px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px; margin-top: 40px; }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         th, td {
             text-align: left;
-            padding: 12px;
+            padding: 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        th { background: rgba(255, 255, 255, 0.1); }
+
         .btn-action {
-            padding: 5px 15px;
-            border-radius: 5px;
+            padding: 8px 12px;
+            border-radius: 6px;
             border: none;
             cursor: pointer;
             font-weight: bold;
+            font-size: 12px;
+            margin-right: 5px;
+            transition: 0.2s;
         }
 
         .btn-approve { background: #2ecc71; color: white; }
+        .btn-block { background: #f39c12; color: white; }
         .btn-delete { background: #e74c3c; color: white; }
+        .btn-action:hover { opacity: 0.8; transform: scale(1.05); }
 
-        .form-group { margin-top: 30px; }
-        input { padding: 10px; border-radius: 5px; border: none; margin-right: 10px; }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-active { background: #2ecc71; color: white; }
+        .status-blocked { background: #e74c3c; color: white; }
+
+        .form-group { margin-top: 30px; display: flex; gap: 10px; }
+        input { 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: none; 
+            flex: 1;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .btn-add { background: #2ecc71; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="admin-card">
         <h1>🛠 Admin Dashboard</h1>
-        <a href="start.html" style="color: #5dade2; text-decoration: none;">← Zurück zur Startseite</a>
+        <a href="start.html" style="color: #5dade2; text-decoration: none; font-weight: bold;">← Zurück zur Startseite</a>
 
         <div class="section">
-            <h2>Studenten freischalten</h2>
+            <h2>Nutzerverwaltung</h2>
             <table id="user-table">
                 <thead>
                     <tr>
                         <th>Name</th>
                         <th>E-Mail</th>
                         <th>Status</th>
-                        <th>Aktion</th>
+                        <th>Aktionen</th>
                     </tr>
                 </thead>
                 <tbody id="user-list-body">
-                    <!-- Wartende User -->
+                    <!-- Nutzer werden hier geladen -->
                 </tbody>
             </table>
         </div>
 
-        <div class="section form-group">
+        <div class="section">
             <h2>Neues Fach hinzufügen</h2>
-            <input type="text" id="new-subject-name" placeholder="Fachname">
-            <input type="text" id="new-subject-info" placeholder="Kurzinfo">
-            <button class="btn-action btn-approve" onclick="addSubject()">Hinzufügen</button>
+            <div class="form-group">
+                <input type="text" id="new-subject-name" placeholder="z.B. Mathematik 1">
+                <input type="text" id="new-subject-info" placeholder="Kurzinfo zum Fach">
+                <button class="btn-add" onclick="addSubject()">Hinzufügen</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
@@ -102,10 +132,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Security Check: Nur Admins dürfen hier sein
+        // Security Check
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return;
             }
             const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -113,32 +143,52 @@
                 alert("Zugriff verweigert!");
                 window.location.href = 'start.html';
             } else {
-                loadPendingUsers();
+                loadUsers();
             }
         });
 
-        async function loadPendingUsers() {
-            const q = query(collection(db, "users"), where("isApproved", "==", false));
-            const querySnapshot = await getDocs(q);
+        async function loadUsers() {
+            const querySnapshot = await getDocs(collection(db, "users"));
             const tbody = document.getElementById('user-list-body');
             tbody.innerHTML = "";
+            
             querySnapshot.forEach((user) => {
                 const data = user.data();
+                if (data.email === 'julianknuhr92@gmail.com') return; // Admin selbst nicht in Liste anzeigen
+
+                const statusBadge = data.isApproved 
+                    ? '<span class="status-badge status-active">Aktiv</span>' 
+                    : '<span class="status-badge status-blocked">Gesperrt</span>';
+
+                const actionBtn = data.isApproved
+                    ? `<button class="btn-action btn-block" onclick="toggleUserStatus('${user.id}', false)">Sperren</button>`
+                    : `<button class="btn-action btn-approve" onclick="toggleUserStatus('${user.id}', true)">Freischalten</button>`;
+
                 tbody.innerHTML += `
                     <tr>
-                        <td>${data.name}</td>
+                        <td>${data.name || 'Kein Name'}</td>
                         <td>${data.email}</td>
-                        <td>Wartend</td>
-                        <td><button class="btn-action btn-approve" onclick="approveUser('${user.id}')">Zulassen</button></td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            ${actionBtn}
+                            <button class="btn-action btn-delete" onclick="deleteUser('${user.id}')">Löschen</button>
+                        </td>
                     </tr>
                 `;
             });
         }
 
-        window.approveUser = async (uid) => {
-            await updateDoc(doc(db, "users", uid), { isApproved: true });
-            alert("User freigeschaltet!");
-            loadPendingUsers();
+        window.toggleUserStatus = async (uid, newStatus) => {
+            const userRef = doc(db, "users", uid);
+            await updateDoc(userRef, { isApproved: newStatus });
+            loadUsers();
+        };
+
+        window.deleteUser = async (uid) => {
+            if (confirm("Möchtest du diesen Nutzer wirklich unwiderruflich aus der Datenbank löschen?")) {
+                await deleteDoc(doc(db, "users", uid));
+                loadUsers();
+            }
         };
 
         window.addSubject = async () => {
@@ -147,7 +197,8 @@
             if(!name) return;
             await setDoc(doc(collection(db, "subjects")), { name, info });
             alert("Fach hinzugefügt!");
-            location.reload();
+            document.getElementById('new-subject-name').value = "";
+            document.getElementById('new-subject-info').value = "";
         };
     </script>
 </body>

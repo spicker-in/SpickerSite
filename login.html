@@ -322,13 +322,14 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Deutsche Fehlermeldungen und E-Mail-Sprache für Firebase Auth
         auth.languageCode = 'de';
 
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
 
         let isRegistering = false;
 
-        // AUTO-LOGIN CHECK -> Immer auf start.html weiterleiten
+        // AUTO-LOGIN CHECK
         onAuthStateChanged(auth, async (user) => {
             if (isRegistering) return;
 
@@ -345,8 +346,11 @@
                             return;
                         }
 
-                        // JEDER freigeschaltete User (inkl. Admin) geht zuerst auf start.html
-                        window.location.href = 'start.html';
+                        if (data.isAdmin || isSuperAdmin) {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'start.html';
+                        }
                         return;
                     }
                 } catch (e) {
@@ -410,7 +414,7 @@
             }
         }
 
-        // LOGIN -> Immer auf start.html weiterleiten
+        // LOGIN
         window.handleLogin = async (e) => {
             e.preventDefault();
             clearMessages();
@@ -435,11 +439,10 @@
                         await signOut(auth);
                         return;
                     }
-                    // Immer auf start.html weiterleiten
-                    window.location.href = 'start.html';
+                    window.location.href = (data.isAdmin || isSuperAdmin) ? 'admin.html' : 'start.html';
                 } else {
                     if (isSuperAdmin) {
-                        window.location.href = 'start.html';
+                        window.location.href = 'admin.html';
                     } else {
                         showError("Nutzerdaten nicht in der Datenbank gefunden.");
                         await signOut(auth);
@@ -495,8 +498,8 @@
                 });
 
                 if (isSuperAdmin) {
-                    showSuccess("👑 Admin-Account erstellt! Weiterleitung zur Startseite...");
-                    setTimeout(() => window.location.href = 'start.html', 1500);
+                    showSuccess("👑 Admin-Account erstellt! Weiterleitung...");
+                    setTimeout(() => window.location.href = 'admin.html', 1500);
                 } else if (isTHN) {
                     showSuccess("✅ <strong>Registrierung erfolgreich!</strong><br>Als TH-Student bist du sofort freigeschaltet.");
                     await signOut(auth);
@@ -541,10 +544,10 @@
             btn.textContent = 'Wird gesendet...';
 
             try {
-                // Sauberer, direkter Aufruf (vermeidet unauthorized-continue-uri)
+                // OHNE actionCodeSettings aufrufen -> Wirft keinen 'unauthorized-continue-uri' Fehler mehr!
                 await sendPasswordResetEmail(auth, email);
 
-                showSuccess("✅ Firebase hat eine E-Mail zum Zurücksetzen gesendet! Bitte prüfe deinen Posteingang und Spam-Ordner.", 'forgot-msg');
+                showSuccess("✅ E-Mail zum Zurücksetzen wurde gesendet! Bitte prüfe deinen Posteingang und Spam-Ordner.", 'forgot-msg');
                 setTimeout(() => closeForgotModal(), 4000);
             } catch (err) {
                 console.error("Firebase Reset Fehler:", err);

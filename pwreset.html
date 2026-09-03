@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passwort zurücksetzen – SpickerSeite</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 28px;
+            padding: 35px 30px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            font-size: 26px;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        p.subtitle {
+            font-size: 14px;
+            opacity: 0.85;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 14px;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            color: #1a252f;
+            font-size: 15px;
+            outline: none;
+            padding-right: 42px;
+        }
+
+            input:focus {
+                background: #fff;
+                border-color: #5dade2;
+                box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.35);
+            }
+
+        .toggle-pw-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #7fb3d5, #2980b9);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+
+            .btn-submit:hover {
+                transform: translateY(-2px);
+            }
+
+            .btn-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+        .msg-box {
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+            .msg-box.error {
+                background: rgba(231, 76, 60, 0.9);
+                color: white;
+                display: block;
+            }
+
+            .msg-box.success {
+                background: rgba(46, 204, 113, 0.9);
+                color: white;
+                display: block;
+            }
+
+        .spinner {
+            width: 38px;
+            height: 38px;
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .login-link-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: #aed6f1;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+            .login-link-btn:hover {
+                text-decoration: underline;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>🔑 Neues Passwort</h1>
+        <p class="subtitle" id="user-info-text">Code wird überprüft...</p>
+
+        <div id="loader-box">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="status-box" class="msg-box"></div>
+
+        <form id="reset-form" style="display: none;" onsubmit="handlePasswordReset(event)">
+            <div class="input-group">
+                <input type="password" id="new-password" placeholder="Neues Passwort (mind. 6 Zeichen)" required minlength="6" autocomplete="new-password">
+                <button type="button" class="toggle-pw-btn" onclick="togglePassword('new-password', this)">👁️</button>
+            </div>
+            <div class="input-group">
+                <input type="password" id="confirm-password" placeholder="Neues Passwort wiederholen" required minlength="6" autocomplete="new-password">
+                <button type="button" class="toggle-pw-btn" onclick="togglePassword('confirm-password', this)">👁️</button>
+            </div>
+            <button type="submit" class="btn-submit" id="btn-save">Passwort speichern</button>
+        </form>
+
+        <a href="login.html" class="login-link-btn" id="back-to-login" style="display: none;">← Zum Login</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import {
+            getAuth,
+            verifyPasswordResetCode,
+            confirmPasswordReset
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
+            authDomain: "spickersite.firebaseapp.com",
+            projectId: "spickersite",
+            storageBucket: "spickersite.firebasestorage.app",
+            messagingSenderId: "515794720428",
+            appId: "1:515794720428:web:f509322fe888fb3c8a3109"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Code (oobCode) aus der URL auslesen
+        const urlParams = new URLSearchParams(window.location.search);
+        const actionCode = urlParams.get('oobCode');
+
+        const loaderBox = document.getElementById('loader-box');
+        const resetForm = document.getElementById('reset-form');
+        const infoText = document.getElementById('user-info-text');
+        const statusBox = document.getElementById('status-box');
+        const backToLogin = document.getElementById('back-to-login');
+
+        let userEmail = '';
+
+        async function checkCode() {
+            if (!actionCode) {
+                loaderBox.style.display = 'none';
+                showError("Ungültiger oder fehlender Link. Bitte fordere einen neuen Reset-Link an.");
+                backToLogin.style.display = 'inline-block';
+                return;
+            }
+
+            try {
+                userEmail = await verifyPasswordResetCode(auth, actionCode);
+                loaderBox.style.display = 'none';
+                infoText.textContent = `Neues Passwort für ${userEmail} eingeben:`;
+                resetForm.style.display = 'block';
+            } catch (err) {
+                loaderBox.style.display = 'none';
+                infoText.textContent = "Ungültiger Link";
+                showError("Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte fordere auf der Login-Seite einen neuen Link an.");
+                backToLogin.style.display = 'inline-block';
+            }
+        }
+
+        window.togglePassword = (fieldId, btn) => {
+            const input = document.getElementById(fieldId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+            btn.textContent = input.type === 'password' ? '👁️' : '🔒';
+        };
+
+        function showError(msg) {
+            statusBox.innerHTML = msg;
+            statusBox.className = 'msg-box error';
+        }
+
+        function showSuccess(msg) {
+            statusBox.innerHTML = msg;
+            statusBox.className = 'msg-box success';
+        }
+
+        window.handlePasswordReset = async (e) => {
+            e.preventDefault();
+            const p1 = document.getElementById('new-password').value;
+            const p2 = document.getElementById('confirm-password').value;
+            const btn = document.getElementById('btn-save');
+
+            if (p1.length < 6) {
+                showError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+                return;
+            }
+
+            if (p1 !== p2) {
+                showError("Die Passwörter stimmen nicht überein!");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Wird gespeichert...';
+
+            try {
+                await confirmPasswordReset(auth, actionCode, p1);
+                resetForm.style.display = 'none';
+                infoText.style.display = 'none';
+                showSuccess("🎉 <strong>Passwort erfolgreich geändert!</strong><br>Du wirst in 3 Sekunden zum Login weitergeleitet...");
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Passwort speichern';
+                showError("Fehler beim Zurücksetzen: " + err.message);
+            }
+        };
+
+        checkCode();
+    </script>
+</body>
+</html>

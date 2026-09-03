@@ -5,12 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite</title>
 
-    <!-- EmailJS SDK mit deinem Public Key -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script>
-        emailjs.init("1OMejyyUkbzLcwj7t");
-    </script>
-
     <style>
         * {
             box-sizing: border-box;
@@ -289,7 +283,7 @@
         <div class="modal-card">
             <h2>🔒 Passwort vergessen?</h2>
             <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px;">
-                Gib deine E-Mail ein. Du erhältst direkt einen Link per E-Mail, um dein Passwort zurückzusetzen:
+                Gib deine E-Mail ein. Du erhältst direkt einen Link per E-Mail, um dein Passwort neu zu vergeben:
             </p>
             <div id="forgot-msg" class="msg-box"></div>
             <input type="email" id="forgot-email" placeholder="E-Mail-Adresse" style="margin-bottom: 12px;">
@@ -312,9 +306,7 @@
             getFirestore,
             doc,
             setDoc,
-            getDoc,
-            addDoc,
-            collection
+            getDoc
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -331,8 +323,6 @@
         const db = getFirestore(app);
 
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
-        const EMAILJS_SERVICE_ID = 'service_7twg9kk';
-        const EMAILJS_TEMPLATE_PW_RESET = 'template_ygaqm3e';
 
         let isRegistering = false;
 
@@ -509,7 +499,7 @@
                     document.getElementById('form-register').reset();
                     setTimeout(() => switchTab('login'), 2000);
                 } else {
-                    showWarning("📝 <strong>Registrierung eingegangen!</strong><br>Der Admin schaltet deinen Account in Kürze frei. Du erhältst eine Bestätigungsmail.");
+                    showWarning("📝 <strong>Registrierung eingegangen!</strong><br>Der Admin schaltet deinen Account in Kürze frei. Du erhältst dann eine Freischaltungs-Mail.");
                     await signOut(auth);
                     document.getElementById('form-register').reset();
                     setTimeout(() => switchTab('login'), 4000);
@@ -545,28 +535,21 @@
             btn.textContent = 'Wird gesendet...';
 
             try {
-                // 1. Standard Firebase Password Reset Link erstellen & senden
-                await sendPasswordResetEmail(auth, email);
+                // Ermittelt den aktuellen Basis-Pfad (z.B. https://domain.de/ordner/pwreset.html)
+                const resetUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/pwreset.html';
 
-                // 2. Eintrag in Firestore für Admin Dashboard
-                await addDoc(collection(db, "passwordRequests"), {
-                    email: email,
-                    requestedAt: new Date(),
-                    status: "offen"
-                });
+                const actionCodeSettings = {
+                    url: resetUrl,
+                    handleCodeInApp: true
+                };
 
-                // 3. EmailJS Benachrichtigung
-                try {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_PW_RESET, {
-                        to_email: email,
-                        reset_link: window.location.origin + '/login.html',
-                        to_name: email
-                    });
-                } catch (e) { console.log('EmailJS info:', e); }
+                // Sendet den sicheren Firebase Reset-Link mit Weiterleitung auf pwreset.html
+                await sendPasswordResetEmail(auth, email, actionCodeSettings);
 
-                showSuccess("✅ Link zum Zurücksetzen wurde per E-Mail verschickt!", 'forgot-msg');
-                setTimeout(() => closeForgotModal(), 3000);
+                showSuccess("✅ Link zum Zurücksetzen wurde per E-Mail verschickt! Klicke in der Mail auf den Link, um dein Passwort neu zu vergeben.", 'forgot-msg');
+                setTimeout(() => closeForgotModal(), 4000);
             } catch (err) {
+                console.error("Firebase Reset Fehler:", err);
                 showError(mapAuthError(err.code) || err.message, 'forgot-msg');
             } finally {
                 btn.disabled = false;

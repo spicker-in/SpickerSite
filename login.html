@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite</title>
-    <!-- EmailJS SDK -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         /* ── DESIGN (Glassmorphism) ── */
         * {
@@ -37,6 +35,7 @@
             color: white;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
             animation: fadeIn 0.4s ease-out;
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -211,6 +210,35 @@
             line-height: 1.5;
         }
 
+        /* ── AUTO-LOGIN OVERLAY ── */
+        #auto-login-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 10px;
+        }
+
+        .spinner {
+            width: 38px;
+            height: 38px;
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         /* ── MODAL (Passwort vergessen) ── */
         .modal-overlay {
             position: fixed;
@@ -262,62 +290,71 @@
     <div class="login-card">
         <h1>SpickerSeite</h1>
 
-        <!-- Tab Auswahl -->
-        <div class="tab-container">
-            <div class="tab active" id="tab-login" onclick="switchTab('login')">🔑 Anmelden</div>
-            <div class="tab" id="tab-register" onclick="switchTab('register')">📝 Registrieren</div>
+        <!-- Lade-Status beim automatischen Login-Check -->
+        <div id="auto-login-overlay">
+            <div class="spinner"></div>
+            <p style="font-size: 14px; margin: 0;">Sitzung wird überprüft...</p>
         </div>
 
-        <!-- Fehlermeldung / Erfolgsmeldung -->
-        <div id="status-box" class="msg-box"></div>
+        <!-- Regulärer Inhalt (wird nach Check eingeblendet) -->
+        <div id="main-content" style="display: none;">
 
-        <!-- ── FORMULAR: ANMELDEN ── -->
-        <form id="form-login" onsubmit="handleLogin(event)">
-            <div class="input-group">
-                <input type="email" id="login-email" placeholder="E-Mail (z.B. mustermann@th-nuernberg.de)" required autocomplete="email">
+            <div class="tab-container">
+                <div class="tab active" id="tab-login" onclick="switchTab('login')">🔑 Anmelden</div>
+                <div class="tab" id="tab-register" onclick="switchTab('register')">📝 Registrieren</div>
             </div>
-            <div class="input-group input-password-wrap">
-                <input type="password" id="login-pass" placeholder="Passwort" required autocomplete="current-password">
-                <button type="button" class="toggle-pw-btn" onclick="togglePassword('login-pass', this)">👁️</button>
-            </div>
-            <button type="submit" class="btn-submit" id="login-btn">Anmelden</button>
-            <div>
-                <a class="forgot-link" onclick="openForgotModal()">Passwort vergessen?</a>
-            </div>
-        </form>
 
-        <!-- ── FORMULAR: REGISTRIEREN ── -->
-        <form id="form-register" style="display: none;" onsubmit="handleRegister(event)">
-            <div class="input-group">
-                <input type="text" id="reg-name" placeholder="Vollständiger Name" required autocomplete="name">
-            </div>
-            <div class="input-group">
-                <input type="email" id="reg-email" placeholder="TH-Mail (@th-nuernberg.de)" required autocomplete="email">
-            </div>
-            <div class="input-group input-password-wrap">
-                <input type="password" id="reg-pass" placeholder="Passwort (mind. 6 Zeichen)" required autocomplete="new-password">
-                <button type="button" class="toggle-pw-btn" onclick="togglePassword('reg-pass', this)">👁️</button>
-            </div>
-            <div class="input-group input-password-wrap">
-                <input type="password" id="reg-pass-repeat" placeholder="Passwort wiederholen" required autocomplete="new-password">
-                <button type="button" class="toggle-pw-btn" onclick="togglePassword('reg-pass-repeat', this)">👁️</button>
-            </div>
-            <button type="submit" class="btn-submit" id="reg-btn">Registrieren</button>
-        </form>
+            <!-- Benachrichtigungs- / Fehlerbox -->
+            <div id="status-box" class="msg-box"></div>
 
-        <p class="footer-text">Nur für Studenten der TH Nürnberg<br>© 2026</p>
+            <!-- FORMULAR: ANMELDEN -->
+            <form id="form-login" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <input type="email" id="login-email" placeholder="E-Mail (z.B. mayerma@th-nuernberg.de)" required autocomplete="email">
+                </div>
+                <div class="input-group input-password-wrap">
+                    <input type="password" id="login-pass" placeholder="Passwort" required autocomplete="current-password">
+                    <button type="button" class="toggle-pw-btn" onclick="togglePassword('login-pass', this)">👁️</button>
+                </div>
+                <button type="submit" class="btn-submit" id="login-btn">Anmelden</button>
+                <div>
+                    <a class="forgot-link" onclick="openForgotModal()">Passwort vergessen?</a>
+                </div>
+            </form>
+
+            <!-- FORMULAR: REGISTRIEREN -->
+            <form id="form-register" style="display: none;" onsubmit="handleRegister(event)">
+                <div class="input-group">
+                    <input type="text" id="reg-name" placeholder="Vollständiger Name" required autocomplete="name">
+                </div>
+                <div class="input-group">
+                    <input type="email" id="reg-email" placeholder="TH-Mail (@th-nuernberg.de)" required autocomplete="email">
+                </div>
+                <div class="input-group input-password-wrap">
+                    <input type="password" id="reg-pass" placeholder="Passwort (mind. 6 Zeichen)" required autocomplete="new-password">
+                    <button type="button" class="toggle-pw-btn" onclick="togglePassword('reg-pass', this)">👁️</button>
+                </div>
+                <div class="input-group input-password-wrap">
+                    <input type="password" id="reg-pass-repeat" placeholder="Passwort wiederholen" required autocomplete="new-password">
+                    <button type="button" class="toggle-pw-btn" onclick="togglePassword('reg-pass-repeat', this)">👁️</button>
+                </div>
+                <button type="submit" class="btn-submit" id="reg-btn">Registrieren</button>
+            </form>
+
+            <p class="footer-text">Nur für Studenten der TH Nürnberg<br>© 2026</p>
+        </div>
     </div>
 
-    <!-- ── MODAL: PASSWORT VERGESSEN ── -->
+    <!-- MODAL: PASSWORT VERGESSEN -->
     <div id="forgot-modal" class="modal-overlay">
         <div class="modal-card">
             <h2>🔒 Passwort zurücksetzen</h2>
             <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px;">
-                Gib deine E-Mail-Adresse ein. Wir senden dir einen Link zum Zurücksetzen des Passworts.
+                Gib deine E-Mail-Adresse ein. Firebase sendet dir einen sicheren Link zum Zurücksetzen.
             </p>
             <div id="forgot-msg" class="msg-box"></div>
             <input type="email" id="forgot-email" placeholder="E-Mail-Adresse" style="margin-bottom: 12px;">
-            <button type="button" class="btn-submit" onclick="handleForgotPassword()">Link anfordern</button>
+            <button type="button" class="btn-submit" onclick="handleForgotPassword()">Link senden</button>
             <button type="button" class="btn-cancel" onclick="closeForgotModal()">Abbrechen</button>
         </div>
     </div>
@@ -326,8 +363,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import {
             getAuth,
+            onAuthStateChanged,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
+            sendEmailVerification,
             sendPasswordResetEmail,
             signOut
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -338,10 +377,6 @@
             getDoc
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. EmailJS Initialisierung
-        emailjs.init("1OMejyyUkbzLcwj7t");
-
-        // 2. Firebase Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
             authDomain: "spickersite.firebaseapp.com",
@@ -355,6 +390,49 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        auth.languageCode = 'de';
+
+        const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
+
+        // ── AUTOMATISCHER LOGIN CHECK ──
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const isSuperAdmin = (user.email && user.email.toLowerCase() === SUPERADMIN_EMAIL);
+
+                // Falls E-Mail nicht verifiziert und kein SuperAdmin -> ausloggen & Login anzeigen
+                if (!user.emailVerified && !isSuperAdmin) {
+                    await signOut(auth);
+                    showForm();
+                    return;
+                }
+
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+
+                        // Weiterleitung je nach Rolle
+                        if (data.isAdmin || isSuperAdmin) {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'start.html';
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Auto-Login Fehler:", e);
+                }
+            }
+
+            // Kein aktiver User -> Formular anzeigen
+            showForm();
+        });
+
+        function showForm() {
+            document.getElementById('auto-login-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+        }
+
         // ── TAB WECHSELN ──
         window.switchTab = (mode) => {
             clearMessages();
@@ -367,7 +445,7 @@
             document.getElementById('form-register').style.display = isLogin ? 'none' : 'block';
         };
 
-        // ── PASSWORT SICHTBARKEIT ──
+        // ── PASSWORT ANZEIGEN / VERBERGEN ──
         window.togglePassword = (fieldId, btn) => {
             const input = document.getElementById(fieldId);
             if (input.type === 'password') {
@@ -382,13 +460,13 @@
         // ── FEEDBACK-BOXEN ──
         function showError(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.textContent = msg;
+            box.innerHTML = msg;
             box.className = 'msg-box error';
         }
 
         function showSuccess(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.textContent = msg;
+            box.innerHTML = msg;
             box.className = 'msg-box success';
         }
 
@@ -406,8 +484,8 @@
                 case 'auth/invalid-credential': return 'E-Mail oder Passwort ist falsch.';
                 case 'auth/email-already-in-use': return 'Diese E-Mail ist bereits registriert.';
                 case 'auth/weak-password': return 'Das Passwort muss mindestens 6 Zeichen lang sein.';
-                case 'auth/too-many-requests': return 'Zu viele Fehlversuche. Bitte kurz warten.';
-                default: return 'Ein Fehler ist aufgetreten: ' + errCode;
+                case 'auth/too-many-requests': return 'Zu viele Versuche. Bitte kurz warten.';
+                default: return 'Fehler: ' + errCode;
             }
         }
 
@@ -426,30 +504,42 @@
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
-                const userDoc = await getDoc(doc(db, "users", user.uid));
+                const isSuperAdmin = (email.toLowerCase() === SUPERADMIN_EMAIL);
 
+                // 1. E-Mail Verifikation prüfen
+                if (!user.emailVerified && !isSuperAdmin) {
+                    showError(`
+                            Bitte bestätige erst deine E-Mail-Adresse!<br>
+                            <small>Keine Mail erhalten? <a href="#" id="resend-mail-btn" style="color:#fff; font-weight:bold; text-decoration:underline;">Erneut senden</a></small>
+                        `);
+
+                    document.getElementById('resend-mail-btn').onclick = async (ev) => {
+                        ev.preventDefault();
+                        try {
+                            await sendEmailVerification(user);
+                            alert("Bestätigungs-Mail wurde erneut an " + email + " versendet.");
+                        } catch (resendErr) {
+                            alert("Fehler beim Senden: " + resendErr.message);
+                        }
+                    };
+
+                    await signOut(auth);
+                    return;
+                }
+
+                // 2. Benutzerdaten & Admin-Rolle abrufen
+                const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-
-                    // Prüfen ob gesperrt / noch nicht approved
-                    if (!data.isApproved) {
-                        showError("Bitte bestätige erst deine E-Mail-Adresse über den zugesendeten Link!");
-                        await signOut(auth);
-                        btn.disabled = false;
-                        btn.textContent = 'Anmelden';
-                        return;
-                    }
-
-                    // Weiterleitung
-                    if (data.isAdmin) {
+                    if (data.isAdmin || isSuperAdmin) {
                         window.location.href = 'admin.html';
                     } else {
                         window.location.href = 'start.html';
                     }
                 } else {
-                    showError("Nutzerdaten konnten nicht gefunden werden.");
-                    await signOut(auth);
+                    window.location.href = isSuperAdmin ? 'admin.html' : 'start.html';
                 }
+
             } catch (err) {
                 showError(mapAuthError(err.code));
             } finally {
@@ -469,16 +559,14 @@
             const passRepeat = document.getElementById('reg-pass-repeat').value;
             const btn = document.getElementById('reg-btn');
 
-            // 1. Domain-Prüfung
             const isTHN = email.endsWith('@th-nuernberg.de');
-            const isAdminEmail = (email === 'julianknuhr92@gmail.com');
+            const isSuperAdmin = (email === SUPERADMIN_EMAIL);
 
-            if (!isTHN && !isAdminEmail) {
+            if (!isTHN && !isSuperAdmin) {
                 showError("Nur offizielle E-Mails der @th-nuernberg.de sind zugelassen!");
                 return;
             }
 
-            // 2. Passwort-Prüfung
             if (pass.length < 6) {
                 showError("Das Passwort muss mindestens 6 Zeichen lang sein.");
                 return;
@@ -496,31 +584,21 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // Sicherheitstoken generieren
-                const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-
-                // Initialer Admin-Status: nur julianknuhr92@gmail.com ist standardmäßig Admin
+                // In Firestore anlegen
                 await setDoc(doc(db, "users", user.uid), {
                     name: name,
                     email: email,
-                    isAdmin: isAdminEmail,
-                    isApproved: isAdminEmail, // Admin direkt freigeschaltet, Studenten erst per Mail
-                    verifyToken: token,
+                    isAdmin: isSuperAdmin,
+                    isApproved: true,
                     createdAt: new Date()
                 });
 
-                // Bestätigungs-Mail senden (außer für Direkt-Admin)
-                if (!isAdminEmail) {
-                    const verifyLink = `https://spicker-in.github.io/verify.html?uid=${user.uid}&token=${token}`;
-                    const templateParams = {
-                        user_name: name,
-                        user_email: email,
-                        verify_link: verifyLink
-                    };
-                    await emailjs.send('service_7twg9kk', 'template_yh83gp9', templateParams);
-                    showSuccess("Registrierung erfolgreich! Bitte klicke auf den Bestätigungslink in deiner E-Mail.");
+                // Bestätigungs-E-Mail senden
+                if (!isSuperAdmin) {
+                    await sendEmailVerification(user);
+                    showSuccess("Registrierung erfolgreich! Bitte klicke auf den Bestätigungslink in deiner E-Mail (auch im Spam nachsehen).");
                 } else {
-                    showSuccess("Admin-Account erfolgreich registriert! Du wirst weitergeleitet...");
+                    showSuccess("Admin-Account erfolgreich registriert!");
                 }
 
                 await signOut(auth);
@@ -528,7 +606,7 @@
 
                 setTimeout(() => {
                     switchTab('login');
-                }, 3000);
+                }, 4000);
 
             } catch (err) {
                 showError(mapAuthError(err.code));
@@ -541,9 +619,7 @@
         // ── PASSWORT ZURÜCKSETZEN ──
         window.openForgotModal = () => {
             const loginMail = document.getElementById('login-email').value;
-            if (loginMail) {
-                document.getElementById('forgot-email').value = loginMail;
-            }
+            if (loginMail) document.getElementById('forgot-email').value = loginMail;
             document.getElementById('forgot-msg').className = 'msg-box';
             document.getElementById('forgot-msg').textContent = '';
             document.getElementById('forgot-modal').style.display = 'flex';
@@ -562,10 +638,8 @@
 
             try {
                 await sendPasswordResetEmail(auth, email);
-                showSuccess("E-Mail zum Zurücksetzen wurde gesendet! Bitte prüfe deinen Posteingang.", 'forgot-msg');
-                setTimeout(() => {
-                    closeForgotModal();
-                }, 3500);
+                showSuccess("E-Mail zum Zurücksetzen wurde erfolgreich gesendet!", 'forgot-msg');
+                setTimeout(() => closeForgotModal(), 3500);
             } catch (err) {
                 showError(mapAuthError(err.code), 'forgot-msg');
             }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite </title>
     <style>
-        /* ── DESIGN ── */
+        /* ── DESIGN (Glassmorphism) ── */
         body {
             margin: 0;
             padding: 0;
@@ -38,12 +38,6 @@
             letter-spacing: 2px;
         }
 
-        p.subtitle {
-            font-style: italic;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-
         .tab-container {
             display: flex;
             background: rgba(255, 255, 255, 0.1);
@@ -66,23 +60,21 @@
                 box-shadow: 0 4px 15px rgba(46, 134, 193, 0.4);
             }
 
-        /* ── GEÄNDERTE INPUT STYLES ── */
         input {
             width: 100%;
             padding: 15px;
             margin-bottom: 15px;
-            /* Hintergrund etwas heller für bessere Lesbarkeit von schwarzem Text */
             background: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
-            color: #000000; /* Textfarbe Schwarz */
-            font-size: 18px; /* Größere Schriftart */
+            color: #000000;
+            font-size: 18px;
             box-sizing: border-box;
             outline: none;
         }
 
             input::placeholder {
-                color: rgba(0, 0, 0, 0.5); /* Platzhalter in dunklem Grau */
+                color: rgba(0, 0, 0, 0.5);
             }
 
         .btn-submit {
@@ -122,24 +114,18 @@
 
     <div class="login-card">
         <h1>SpickerSeite</h1>
-
         <div class="tab-container">
             <div class="tab active" id="tab-login" onclick="switchTab('login')">🔑 Anmelden</div>
             <div class="tab" id="tab-register" onclick="switchTab('register')">📝 Registrieren</div>
         </div>
-
         <div id="error-box" class="error-msg"></div>
-
         <input type="text" id="name-field" placeholder="Name" style="display: none;">
-        <input type="email" id="email-field" placeholder="E-Mail (z.B. mayerma123456@th-nuernberg.de)">
+        <input type="email" id="email-field" placeholder="E-Mail (z.B. mayerma@th-nuernberg.de)">
         <input type="password" id="pass-field" placeholder="Passwort">
-
         <button class="btn-submit" id="submit-btn" onclick="handleAuth()">Anmelden</button>
-
         <p class="footer-text">Nur für Studenten der TH Nürnberg<br> © 2026</p>
     </div>
 
-    <!-- ── FIREBASE LOGIK ── -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -174,11 +160,14 @@
             const pass = document.getElementById('pass-field').value;
             const name = document.getElementById('name-field').value;
             const errorBox = document.getElementById('error-box');
-
             errorBox.style.display = 'none';
 
             if (mode === 'register') {
-                if (!email.endsWith('@th-nuernberg.de') && email !== 'julianknuhr92@gmail.com') {
+                // Check ob TH-Nürnberg oder Admin-Email
+                const isTHN = email.endsWith('@th-nuernberg.de');
+                const isAdminEmail = (email === 'julianknuhr92@gmail.com');
+
+                if (!isTHN && !isAdminEmail) {
                     errorBox.textContent = "Nur E-Mails der @th-nuernberg.de sind erlaubt!";
                     errorBox.style.display = 'block';
                     return;
@@ -188,17 +177,17 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
 
-                    const isAdmin = (email === 'julianknuhr92@gmail.com');
+                    // SOFORTIGE FREISCHALTUNG für gültige E-Mails
                     await setDoc(doc(db, "users", user.uid), {
                         name: name,
                         email: email,
-                        isAdmin: isAdmin,
-                        isApproved: isAdmin,
+                        isAdmin: isAdminEmail,
+                        isApproved: true, // Jeder mit richtiger Mail ist sofort drin
                         createdAt: new Date()
                     });
 
-                    alert("Registrierung erfolgreich! Ein Admin muss dich noch freischalten.");
-                    location.reload();
+                    alert("Registrierung erfolgreich! Du wirst jetzt eingeloggt.");
+                    window.location.href = 'start.html';
                 } catch (error) {
                     errorBox.textContent = "Fehler: " + error.message;
                     errorBox.style.display = 'block';
@@ -207,18 +196,14 @@
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
-
                     const userDoc = await getDoc(doc(db, "users", user.uid));
+
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         if (!data.isApproved) {
-                            alert("Dein Account wurde noch nicht von einem Admin freigeschaltet.");
+                            alert("Dein Account wurde gesperrt. Kontaktiere einen Admin.");
                             return;
                         }
-
-                        sessionStorage.setItem('user_name', data.name);
-                        sessionStorage.setItem('user_role', data.isAdmin ? 'admin' : 'student');
-
                         window.location.href = 'start.html';
                     }
                 } catch (error) {

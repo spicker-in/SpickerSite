@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite </title>
     <style>
-        /* ── DESIGN (Glassmorphism) ── */
+        /* ... (Design bleibt identisch wie in deinem Code) ... */
         body {
             margin: 0;
             padding: 0;
@@ -128,7 +128,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -163,7 +163,6 @@
             errorBox.style.display = 'none';
 
             if (mode === 'register') {
-                // Check ob TH-Nürnberg oder Admin-Email
                 const isTHN = email.endsWith('@th-nuernberg.de');
                 const isAdminEmail = (email === 'julianknuhr92@gmail.com');
 
@@ -177,17 +176,24 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
 
-                    // SOFORTIGE FREISCHALTUNG für gültige E-Mails
+                    // 1. Verifizierungs-E-Mail senden
+                    await sendEmailVerification(user);
+
+                    // 2. User in Firestore speichern
                     await setDoc(doc(db, "users", user.uid), {
                         name: name,
                         email: email,
                         isAdmin: isAdminEmail,
-                        isApproved: true, // Jeder mit richtiger Mail ist sofort drin
+                        isApproved: true,
                         createdAt: new Date()
                     });
 
-                    alert("Registrierung erfolgreich! Du wirst jetzt eingeloggt.");
-                    window.location.href = 'start.html';
+                    alert("Registrierung fast fertig! Wir haben dir eine Bestätigungs-E-Mail gesendet. Bitte klicke auf den Link in der Mail, um dein Konto zu aktivieren.");
+
+                    // Sofort wieder ausloggen, damit man sich erst nach Verifizierung einloggen kann
+                    await signOut(auth);
+                    location.reload();
+
                 } catch (error) {
                     errorBox.textContent = "Fehler: " + error.message;
                     errorBox.style.display = 'block';
@@ -196,14 +202,17 @@
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
-                    const userDoc = await getDoc(doc(db, "users", user.uid));
 
+                    // PRÜFUNG: Ist die E-Mail bestätigt?
+                    if (!user.emailVerified) {
+                        errorBox.textContent = "Bitte bestätige erst deine E-Mail-Adresse! Schau in dein Postfach.";
+                        errorBox.style.display = 'block';
+                        await signOut(auth); // Wieder ausloggen
+                        return;
+                    }
+
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
-                        const data = userDoc.data();
-                        if (!data.isApproved) {
-                            alert("Dein Account wurde gesperrt. Kontaktiere einen Admin.");
-                            return;
-                        }
                         window.location.href = 'start.html';
                     }
                 } catch (error) {

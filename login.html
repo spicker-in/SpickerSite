@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – SpickerSeite </title>
+    <!-- EmailJS SDK einbinden -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
-        /* ... (Design bleibt identisch wie in deinem Code) ... */
+        /* ── DESIGN (Glassmorphism) ── */
         body {
             margin: 0;
             padding: 0;
@@ -128,8 +130,12 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // EmailJS Initialisierung
+        // BITTE HIER DEINEN PUBLIC KEY EINTRAGEN (Dashboard -> Account -> API Keys)
+        emailjs.init("1OMejyyUkbzLcwj7t");
 
         const firebaseConfig = {
             apiKey: "AIzaSyCFFoB1iSsfFyhDDPlsyNrTPf_mnpogVOc",
@@ -176,21 +182,32 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
 
-                    // 1. Verifizierungs-E-Mail senden
-                    await sendEmailVerification(user);
+                    // 1. Sicherheitstoken generieren
+                    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-                    // 2. User in Firestore speichern
+                    // 2. User in Firestore speichern (isApproved: false)
                     await setDoc(doc(db, "users", user.uid), {
                         name: name,
                         email: email,
                         isAdmin: isAdminEmail,
-                        isApproved: true,
+                        isApproved: false, // Erst nach Klick auf Link true
+                        verifyToken: token,
                         createdAt: new Date()
                     });
 
-                    alert("Registrierung fast fertig! Wir haben dir eine Bestätigungs-E-Mail gesendet. Bitte klicke auf den Link in der Mail, um dein Konto zu aktivieren.");
+                    // 3. E-Mail über EmailJS senden (Service ID: service_7twg9kk)
+                    const verifyLink = `https://spicker-in.github.io/verify.html?uid=${user.uid}&token=${token}`;
 
-                    // Sofort wieder ausloggen, damit man sich erst nach Verifizierung einloggen kann
+                    const templateParams = {
+                        user_name: name,
+                        user_email: email,
+                        verify_link: verifyLink // Variable für das EmailJS Template {{verify_link}}
+                    };
+
+                    await emailjs.send('service_7twg9kk', 'template_yh83gp9', templateParams);
+
+                    alert("Registrierung fast fertig! Wir haben dir eine Bestätigungs-E-Mail gesendet. Bitte klicke auf den Button in der Mail.");
+
                     await signOut(auth);
                     location.reload();
 
@@ -202,17 +219,18 @@
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                     const user = userCredential.user;
-
-                    // PRÜFUNG: Ist die E-Mail bestätigt?
-                    if (!user.emailVerified) {
-                        errorBox.textContent = "Bitte bestätige erst deine E-Mail-Adresse! Schau in dein Postfach.";
-                        errorBox.style.display = 'block';
-                        await signOut(auth); // Wieder ausloggen
-                        return;
-                    }
-
                     const userDoc = await getDoc(doc(db, "users", user.uid));
+
                     if (userDoc.exists()) {
+                        const data = userDoc.data();
+
+                        // PRÜFUNG: Ist der Account über den Link freigeschaltet worden?
+                        if (!data.isApproved) {
+                            alert("Bitte bestätige erst deine E-Mail-Adresse! Schau in dein Postfach.");
+                            await signOut(auth);
+                            return;
+                        }
+
                         window.location.href = 'start.html';
                     }
                 } catch (error) {

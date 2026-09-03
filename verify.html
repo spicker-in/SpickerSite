@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Konto verifizieren – SpickerSeite</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80') no-repeat center fixed;
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .loader {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #5dade2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn {
+            display: none;
+            background: #5dade2;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1 id="status-title">Verifizierung läuft...</h1>
+        <div id="loader" class="loader"></div>
+        <p id="status-text">Bitte warten, wir prüfen deinen Zugang.</p>
+        <a href="index.html" id="login-btn" class="btn">Jetzt Anmelden</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { /* Deine Config */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // URL Parameter lesen (?uid=...&token=...)
+        const params = new URLSearchParams(window.location.search);
+        const uid = params.get('uid');
+        const token = params.get('token');
+
+        async function verify() {
+            if (!uid || !token) {
+                showError("Ungültiger Link.");
+                return;
+            }
+
+            const userRef = doc(db, "users", uid);
+            const userDoc = await getDoc(userRef);
+
+            if (userDoc.exists() && userDoc.data().verifyToken === token) {
+                // Erfolg! User freischalten
+                await updateDoc(userRef, {
+                    isApproved: true,
+                    verifyToken: "" // Token löschen nach Nutzung
+                });
+                showSuccess();
+            } else {
+                showError("Verifizierung fehlgeschlagen oder bereits abgelaufen.");
+            }
+        }
+
+        function showSuccess() {
+            document.getElementById('status-title').textContent = "Erfolgreich!";
+            document.getElementById('status-text').textContent = "Dein Konto wurde aktiviert. Du kannst dich jetzt einloggen.";
+            document.getElementById('loader').style.display = "none";
+            document.getElementById('login-btn').style.display = "inline-block";
+        }
+
+        function showError(msg) {
+            document.getElementById('status-title').textContent = "Fehler";
+            document.getElementById('status-text').textContent = msg;
+            document.getElementById('loader').style.display = "none";
+        }
+
+        verify();
+    </script>
+</body>
+</html>

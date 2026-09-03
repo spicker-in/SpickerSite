@@ -283,7 +283,7 @@
         <div class="modal-card">
             <h2>🔒 Passwort vergessen?</h2>
             <p style="font-size: 13px; opacity: 0.85; margin-bottom: 15px;">
-                Gib deine E-Mail ein. Du erhältst direkt einen Link per E-Mail, um dein Passwort neu zu vergeben:
+                Gib deine registrierte E-Mail-Adresse ein. Firebase sendet dir direkt einen Link zum Zurücksetzen:
             </p>
             <div id="forgot-msg" class="msg-box"></div>
             <input type="email" id="forgot-email" placeholder="E-Mail-Adresse" style="margin-bottom: 12px;">
@@ -321,6 +321,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Deutsche Fehlermeldungen und E-Mail-Sprache für Firebase Auth
+        auth.languageCode = 'de';
 
         const SUPERADMIN_EMAIL = 'julianknuhr92@gmail.com';
 
@@ -379,25 +382,29 @@
 
         function showError(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.innerHTML = msg; box.className = 'msg-box error';
+            box.innerHTML = msg;
+            box.className = 'msg-box error';
         }
         function showWarning(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.innerHTML = msg; box.className = 'msg-box warning';
+            box.innerHTML = msg;
+            box.className = 'msg-box warning';
         }
         function showSuccess(msg, targetId = 'status-box') {
             const box = document.getElementById(targetId);
-            box.innerHTML = msg; box.className = 'msg-box success';
+            box.innerHTML = msg;
+            box.className = 'msg-box success';
         }
         function clearMessages() {
             const box = document.getElementById('status-box');
-            box.className = 'msg-box'; box.textContent = '';
+            box.className = 'msg-box';
+            box.textContent = '';
         }
 
         function mapAuthError(errCode) {
             switch (errCode) {
                 case 'auth/invalid-email': return 'Ungültiges E-Mail-Format.';
-                case 'auth/user-not-found': return 'Kein Account mit dieser E-Mail gefunden.';
+                case 'auth/user-not-found': return 'Kein Account mit dieser E-Mail-Adresse gefunden.';
                 case 'auth/wrong-password':
                 case 'auth/invalid-credential': return 'E-Mail oder Passwort ist falsch.';
                 case 'auth/email-already-in-use': return 'Diese E-Mail ist bereits registriert.';
@@ -517,6 +524,8 @@
         window.openForgotModal = () => {
             const loginMail = document.getElementById('login-email').value;
             if (loginMail) document.getElementById('forgot-email').value = loginMail;
+            document.getElementById('forgot-msg').className = 'msg-box';
+            document.getElementById('forgot-msg').textContent = '';
             document.getElementById('forgot-modal').style.display = 'flex';
         };
         window.closeForgotModal = () => {
@@ -535,22 +544,18 @@
             btn.textContent = 'Wird gesendet...';
 
             try {
-                // Ermittelt den aktuellen Basis-Pfad (z.B. https://domain.de/ordner/pwreset.html)
-                const resetUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/pwreset.html';
+                // OHNE actionCodeSettings aufrufen -> Wirft keinen 'unauthorized-continue-uri' Fehler mehr!
+                await sendPasswordResetEmail(auth, email);
 
-                const actionCodeSettings = {
-                    url: resetUrl,
-                    handleCodeInApp: true
-                };
-
-                // Sendet den sicheren Firebase Reset-Link mit Weiterleitung auf pwreset.html
-                await sendPasswordResetEmail(auth, email, actionCodeSettings);
-
-                showSuccess("✅ Link zum Zurücksetzen wurde per E-Mail verschickt! Klicke in der Mail auf den Link, um dein Passwort neu zu vergeben.", 'forgot-msg');
+                showSuccess("✅ E-Mail zum Zurücksetzen wurde gesendet! Bitte prüfe deinen Posteingang und Spam-Ordner.", 'forgot-msg');
                 setTimeout(() => closeForgotModal(), 4000);
             } catch (err) {
                 console.error("Firebase Reset Fehler:", err);
-                showError(mapAuthError(err.code) || err.message, 'forgot-msg');
+                if (err.code === 'auth/user-not-found') {
+                    showError("Es existiert kein Account mit dieser E-Mail-Adresse in Firebase.", 'forgot-msg');
+                } else {
+                    showError(mapAuthError(err.code) || err.message, 'forgot-msg');
+                }
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Reset-Link anfordern';
